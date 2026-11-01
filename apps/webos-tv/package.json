@@ -1,0 +1,8 @@
+{
+  "name": "@iptv/webos-tv",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "package": "ares-package . -o ../../dist/packages"
+  }
+}

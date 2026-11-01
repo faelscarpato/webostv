@@ -1,0 +1,23 @@
+{
+  "name": "iptv-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Player e Gerenciador de IPTV Local para TV LG webOS",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:server": "npm run dev --workspace=apps/local-server",
+    "dev:manager": "npm run dev --workspace=apps/manager",
+    "dev:tv": "npm run dev --workspace=apps/webos-tv",
+    "build:tv": "npm run build --workspace=apps/webos-tv",
+    "package:tv": "npm run package --workspace=apps/webos-tv"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "typescript": "^5.7.3"
+  }
+}

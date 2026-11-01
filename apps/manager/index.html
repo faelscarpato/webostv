@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Local - Painel de Controle</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151d2f;
+      --card-border: #243048;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --radius: 12px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .badge {
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+    .badge-online {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .badge-offline {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    nav {
+      display: flex;
+      gap: 0.5rem;
+      background: var(--card-bg);
+      padding: 0.75rem 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      overflow-x: auto;
+    }
+    .nav-btn {
+      padding: 0.6rem 1.2rem;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .nav-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-btn.active {
+      color: var(--primary);
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 0.25rem;
+    }
+    .stat-lbl {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: #0b0f19;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #0b0f19;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .btn-danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .channel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 600px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+    .channel-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      gap: 1rem;
+    }
+    .channel-item.hidden-chan {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+    .channel-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .channel-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background: #1e293b;
+      object-fit: contain;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .channel-name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .channel-group-tag {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .channel-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.4rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .icon-btn.active-fav {
+      color: var(--warning);
+    }
+    .pin-display {
+      text-align: center;
+      padding: 2.5rem 1rem;
+    }
+    .pin-box {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: 0.5rem;
+      color: var(--accent);
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px dashed rgba(16, 185, 129, 0.4);
+      border-radius: 16px;
+      display: inline-block;
+      padding: 1rem 2rem;
+      margin: 1.5rem 0;
+      font-family: monospace;
+    }
+    .pin-timer {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+    .device-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .device-table th, .device-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .device-table th {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .alert {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .alert-info {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--primary);
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-logo">IP</div>
+      <div>
+        <div class="brand-title">IPTV Local Manager</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Serviço Doméstico Privado</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <span id="server-status-badge" class="badge badge-offline">Verificando...</span>
+      <span id="server-host-label" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+    </div>
+  </header>
+
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('channels')">📺 Canais & Grupos</button>
+    <button class="nav-btn" onclick="switchTab('upload')">📥 Importar Playlist (M3U)</button>
+    <button class="nav-btn" onclick="switchTab('pairing')">🔗 Parear TV LG</button>
+    <button class="nav-btn" onclick="switchTab('epg')">📅 Guia EPG (XMLTV)</button>
+  </nav>
+
+  <main>
+    <!-- TAB: CANAIS -->
+    <div id="tab-channels" class="tab-content active">
+      <div class="grid-stats">
+        <div class="stat-card">
+          <div class="stat-lbl">Total de Canais</div>
+          <div class="stat-val" id="stat-total-channels">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Canais Ativos</div>
+          <div class="stat-val" id="stat-active-channels">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Categorias</div>
+          <div class="stat-val" id="stat-total-groups">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Favoritos</div>
+          <div class="stat-val" id="stat-fav-channels" style="color: var(--warning);">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+          <input type="text" id="search-input" placeholder="🔍 Buscar canal por nome..." style="flex: 2; min-width: 200px;" oninput="filterChannels()">
+          <select id="group-select" style="flex: 1; min-width: 150px;" onchange="filterChannels()">
+            <option value="">Todas as Categorias</option>
+          </select>
+          <button class="btn btn-outline" id="fav-toggle-btn" onclick="toggleFavFilter()">⭐ Apenas Favoritos</button>
+        </div>
+
+        <div id="channels-container" class="channel-list">
+          <div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal carregado. Importe uma playlist na aba M3U.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: UPLOAD -->
+    <div id="tab-upload" class="tab-content">
+      <div class="card">
+        <div class="card-title">📁 Importar Arquivo M3U / M3U8 Local</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+          Selecione o arquivo da sua playlist autorizada no computador ou celular. A lista original será preservada integralmente e as personalizações serão salvas como sobreposição.
+        </p>
+        <div class="form-group">
+          <input type="file" id="m3u-file-input" accept=".m3u,.m3u8,text/plain" style="padding: 0.5rem;">
+        </div>
+        <button class="btn btn-primary" onclick="uploadM3UFile()">📤 Enviar Arquivo M3U</button>
+        <div id="upload-status" style="margin-top: 1rem;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌐 Importar por URL Remota (com Proteção SSRF)</div>
+        <div class="alert alert-info">
+          🛡️ <strong>Segurança Local:</strong> URLs inseridas passam por verificação prévia de DNS e bloqueio estrito de SSRF para faixas de rede privada e de metadados.
+        </div>
+        <div class="form-group">
+          <label>URL da Playlist M3U/M3U8:</label>
+          <input type="url" id="m3u-url-input" placeholder="https://provedor-autorizado.com/minhalista.m3u8">
+        </div>
+        <button class="btn btn-primary" onclick="importM3UUrl()">Baixar e Importar Playlist</button>
+        <div id="url-status" style="margin-top: 1rem;"></div>
+      </div>
+    </div>
+
+    <!-- TAB: PAREAMENTO -->
+    <div id="tab-pairing" class="tab-content">
+      <div class="card">
+        <div class="card-title">🔗 Conectar TV LG webOS</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Para autorizar a TV na rede local, gere um PIN de segurança de 6 dígitos. Na tela da TV, digite este código para validar a conexão imediata.
+        </p>
+
+        <div class="pin-display">
+          <div id="pin-container" style="display: none;">
+            <div style="font-size: 0.9rem; color: var(--text-muted);">Digite este PIN na TV:</div>
+            <div class="pin-box" id="pin-value">000000</div>
+            <div class="pin-timer" id="pin-timer">Expira em 5:00</div>
+          </div>
+          <button class="btn btn-primary" id="generate-pin-btn" onclick="generatePIN()">🔑 Gerar Novo PIN de Pareamento</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📺 TVs Pareadas na Rede Local</div>
+        <div id="devices-container">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Nenhuma TV pareada no momento.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: EPG -->
+    <div id="tab-epg" class="tab-content">
+      <div class="card">
+        <div class="card-title">📅 Carregar Guia de Programação (XMLTV)</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+          O guia de programação (EPG) é opcional. Se tiver um arquivo XMLTV (.xml), você pode carregá-lo para exibir o que está passando agora em cada canal na TV.
+        </p>
+        <div class="form-group">
+          <input type="file" id="epg-file-input" accept=".xml,text/xml">
+        </div>
+        <button class="btn btn-primary" onclick="uploadEPGFile()">📤 Carregar Guia XMLTV</button>
+        <div id="epg-status" style="margin-top: 1rem;"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') || window.location.origin.includes('192.168.')
+      ? window.location.origin
+      : 'http://localhost:3001';
+
+    let allChannels = [];
+    let allGroups = [];
+    let isFavFilterActive = false;
+    let pinTimerInterval = null;
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('server-status-badge').className = 'badge badge-online';
+          document.getElementById('server-status-badge').textContent = 'Online';
+          document.getElementById('server-host-label').textContent = `${API_BASE}`;
+
+          document.getElementById('stat-total-channels').textContent = data.totalChannels;
+          document.getElementById('stat-active-channels').textContent = data.activeChannels;
+          document.getElementById('stat-total-groups').textContent = data.totalGroups;
+          document.getElementById('stat-fav-channels').textContent = data.favoriteChannels;
+        } else {
+          throw new Error('Offline');
+        }
+      } catch {
+        document.getElementById('server-status-badge').className = 'badge badge-offline';
+        document.getElementById('server-status-badge').textContent = 'Servidor Offline';
+      }
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) targetTab.classList.add('active');
+
+      const buttons = document.querySelectorAll('.nav-btn');
+      if (tabName === 'channels') buttons[0].classList.add('active');
+      if (tabName === 'upload') buttons[1].classList.add('active');
+      if (tabName === 'pairing') {
+        buttons[2].classList.add('active');
+        loadDevices();
+        checkActivePin();
+      }
+      if (tabName === 'epg') buttons[3].classList.add('active');
+    }
+
+    async function loadChannels() {
+      try {
+        const res = await fetch(`${API_BASE}/api/channels`);
+        const data = await res.json();
+        allChannels = data.channels || [];
+
+        const groupRes = await fetch(`${API_BASE}/api/groups`);
+        const groupData = await groupRes.json();
+        allGroups = groupData.groups || [];
+
+        populateGroupsDropdown();
+        renderChannels(allChannels);
+      } catch (err) {
+        console.error('Falha ao carregar canais:', err);
+      }
+    }
+
+    function populateGroupsDropdown() {
+      const select = document.getElementById('group-select');
+      select.innerHTML = '<option value="">Todas as Categorias</option>';
+      allGroups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name;
+        opt.textContent = `${g.name} (${g.count})`;
+        select.appendChild(opt);
+      });
+    }
+
+    function filterChannels() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const selectedGroup = document.getElementById('group-select').value;
+
+      const filtered = allChannels.filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(search);
+        const matchesGroup = !selectedGroup || c.groupTitle.toLowerCase() === selectedGroup.toLowerCase();
+        const matchesFav = !isFavFilterActive || c.isFavorite;
+        return matchesSearch && matchesGroup && matchesFav;
+      });
+
+      renderChannels(filtered);
+    }
+
+    function toggleFavFilter() {
+      isFavFilterActive = !isFavFilterActive;
+      const btn = document.getElementById('fav-toggle-btn');
+      if (isFavFilterActive) {
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-outline');
+      } else {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+      }
+      filterChannels();
+    }
+
+    function renderChannels(list) {
+      const container = document.getElementById('channels-container');
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal encontrado.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(c => `
+        <div class="channel-item ${c.isHidden ? 'hidden-chan' : ''}">
+          <div class="channel-info">
+            ${c.logoUrl ? `<img src="${c.logoUrl}" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
+            <div>
+              <div class="channel-name" title="${c.name}">${c.name}</div>
+              <div class="channel-group-tag">${c.groupTitle} ${c.originalName !== c.name ? `(orig: ${c.originalName})` : ''}</div>
+            </div>
+          </div>
+          <div class="channel-actions">
+            <button class="icon-btn ${c.isFavorite ? 'active-fav' : ''}" title="Favorito" onclick="toggleFavorite('${c.id}', ${!c.isFavorite})">⭐</button>
+            <button class="icon-btn" title="Renomear" onclick="renameChannel('${c.id}', '${c.name.replace(/'/g, "\\'")}')">✏️</button>
+            <button class="icon-btn" title="${c.isHidden ? 'Exibir' : 'Ocultar'}" onclick="toggleHidden('${c.id}', ${!c.isHidden})">${c.isHidden ? '👁️' : '🚫'}</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function toggleFavorite(channelId, isFavorite) {
+      await fetch(`${API_BASE}/api/channels/${channelId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFavorite }),
+      });
+      const ch = allChannels.find(c => c.id === channelId);
+      if (ch) ch.isFavorite = isFavorite;
+      filterChannels();
+      checkHealth();
+    }
+
+    async function toggleHidden(channelId, isHidden) {
+      await fetch(`${API_BASE}/api/channels/${channelId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isHidden }),
+      });
+      const ch = allChannels.find(c => c.id === channelId);
+      if (ch) ch.isHidden = isHidden;
+      filterChannels();
+      checkHealth();
+    }
+
+    async function renameChannel(channelId, currentName) {
+      const newName = prompt('Novo nome para o canal:', currentName);
+      if (newName && newName.trim() && newName !== currentName) {
+        await fetch(`${API_BASE}/api/channels/${channelId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName.trim() }),
+        });
+        const ch = allChannels.find(c => c.id === channelId);
+        if (ch) ch.name = newName.trim();
+        filterChannels();
+      }
+    }
+
+    async function uploadM3UFile() {
+      const fileInput = document.getElementById('m3u-file-input');
+      const statusDiv = document.getElementById('upload-status');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        statusDiv.innerHTML = '<div class="alert alert-error">Por favor, selecione um arquivo .m3u ou .m3u8</div>';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      statusDiv.innerHTML = '<div class="alert alert-info">Lendo e enviando arquivo...</div>';
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const content = e.target.result;
+          const res = await fetch(`${API_BASE}/api/playlists/upload`, {
+            method: 'POST',
+            body: content,
+          });
+          const data = await res.json();
+          if (res.ok) {
+            statusDiv.innerHTML = `<div class="alert alert-info">✅ Sucesso! ${data.status.totalChannels} canais carregados em ${data.status.totalGroups} categorias.</div>`;
+            await checkHealth();
+            await loadChannels();
+          } else {
+            statusDiv.innerHTML = `<div class="alert alert-error">Erro: ${data.error}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="alert alert-error">Falha ao enviar: ${err.message}</div>`;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function importM3UUrl() {
+      const urlInput = document.getElementById('m3u-url-input');
+      const statusDiv = document.getElementById('url-status');
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        statusDiv.innerHTML = '<div class="alert alert-error">Por favor, digite a URL da playlist</div>';
+        return;
+      }
+
+      statusDiv.innerHTML = '<div class="alert alert-info">⏳ Validando SSRF e baixando playlist do servidor remoto...</div>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/playlists/import-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          statusDiv.innerHTML = `<div class="alert alert-info">✅ Playlist importada com sucesso! ${data.status.totalChannels} canais prontos.</div>`;
+          await checkHealth();
+          await loadChannels();
+        } else {
+          statusDiv.innerHTML = `<div class="alert alert-error">Erro na importação: ${data.error}</div>`;
+        }
+      } catch (err) {
+        statusDiv.innerHTML = `<div class="alert alert-error">Falha na conexão: ${err.message}</div>`;
+      }
+    }
+
+    async function generatePIN() {
+      try {
+        const res = await fetch(`${API_BASE}/api/devices/pair/request`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          displayPin(data.pin, data.expiresAt);
+        }
+      } catch (err) {
+        alert('Falha ao gerar PIN: ' + err.message);
+      }
+    }
+
+    async function checkActivePin() {
+      try {
+        const res = await fetch(`${API_BASE}/api/devices/pair/status`);
+        const data = await res.json();
+        if (data.activePin) {
+          displayPin(data.activePin.pin, data.activePin.expiresAt);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function displayPin(pin, expiresAt) {
+      document.getElementById('pin-container').style.display = 'block';
+      document.getElementById('pin-value').textContent = pin;
+      document.getElementById('generate-pin-btn').textContent = '🔄 Gerar Outro PIN';
+
+      if (pinTimerInterval) clearInterval(pinTimerInterval);
+
+      const target = new Date(expiresAt).getTime();
+      const updateTimer = () => {
+        const remaining = Math.max(0, Math.floor((target - Date.now()) / 1000));
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        document.getElementById('pin-timer').textContent = `Expira em ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        if (remaining <= 0) {
+          clearInterval(pinTimerInterval);
+          document.getElementById('pin-timer').textContent = 'PIN Expirado. Gere um novo.';
+        }
+      };
+      updateTimer();
+      pinTimerInterval = setInterval(updateTimer, 1000);
+    }
+
+    async function loadDevices() {
+      try {
+        const res = await fetch(`${API_BASE}/api/devices`);
+        const data = await res.json();
+        const container = document.getElementById('devices-container');
+        if (!data.devices || data.devices.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Nenhuma TV pareada no momento.</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table class="device-table">
+            <thead>
+              <tr>
+                <th>Dispositivo</th>
+                <th>ID</th>
+                <th>Pareado em</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.devices.map(d => `
+                <tr>
+                  <td>📺 <strong>${d.name}</strong></td>
+                  <td style="font-family: monospace; font-size: 0.8rem;">${d.deviceId}</td>
+                  <td style="font-size: 0.85rem; color: var(--text-muted);">${new Date(d.pairedAt).toLocaleString('pt-BR')}</td>
+                  <td>
+                    <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="revokeDevice('${d.deviceId}')">Revogar</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        console.error('Falha ao listar dispositivos:', err);
+      }
+    }
+
+    async function revokeDevice(deviceId) {
+      if (confirm('Deseja realmente desconectar esta TV? Ela precisará ser pareada novamente com um novo PIN.')) {
+        await fetch(`${API_BASE}/api/devices/${deviceId}`, { method: 'DELETE' });
+        loadDevices();
+        checkHealth();
+      }
+    }
+
+    async function uploadEPGFile() {
+      const fileInput = document.getElementById('epg-file-input');
+      const statusDiv = document.getElementById('epg-status');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        statusDiv.innerHTML = '<div class="alert alert-error">Selecione um arquivo XMLTV (.xml)</div>';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      statusDiv.innerHTML = '<div class="alert alert-info">Processando guia XMLTV...</div>';
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const content = e.target.result;
+          const res = await fetch(`${API_BASE}/api/epg/upload`, {
+            method: 'POST',
+            body: content,
+          });
+          const data = await res.json();
+          if (res.ok) {
+            statusDiv.innerHTML = `<div class="alert alert-info">✅ Guia carregado com sucesso! ${data.status.totalProgrammes} programas mapeados.</div>`;
+            await checkHealth();
+          } else {
+            statusDiv.innerHTML = `<div class="alert alert-error">Erro: ${data.error}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="alert alert-error">Falha ao enviar: ${err.message}</div>`;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Inicialização
+    checkHealth();
+    loadChannels();
+    setInterval(checkHealth, 10000);
+  </script>
+</body>
+</html>

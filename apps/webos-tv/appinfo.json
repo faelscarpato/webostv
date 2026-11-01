@@ -1,0 +1,13 @@
+{
+  "id": "com.iptv.local",
+  "version": "1.0.0",
+  "vendor": "IPTVLocal",
+  "type": "web",
+  "main": "index.html",
+  "title": "IPTV Local",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "resolution": "1920x1080",
+  "requiredACG": [],
+  "checkUpdateOnLaunch": false
+}

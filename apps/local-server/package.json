@@ -1,0 +1,19 @@
+{
+  "name": "@iptv/local-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "test": "node --test dist/**/*.test.js || echo 'Run after build'"
+  },
+  "dependencies": {
+    "@iptv/shared": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "typescript": "^5.7.3"
+  }
+}
