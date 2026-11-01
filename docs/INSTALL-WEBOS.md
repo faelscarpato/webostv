@@ -41,11 +41,11 @@ ares-novacom --device lg-tv --getkey
 O utilitário solicitará a **Passphrase** exibida na TV (ex: `B3EA28`). Após a digitação, o arquivo de chave SSH privado é baixado e associado localmente ao perfil `lg-tv`.
 
 ### 3.3 Validar a Conexão
-Para testar a comunicação sem alterar nenhum aplicativo na TV:
+Para testar a comunicação sem alterar nenhum aplicativo na TV (nota: na CLI webOS 3.2.6+, utilize `ares-device -i` pois `ares-device-info` foi descontinuado):
 ```powershell
-ares-device-info -d lg-tv
+ares-device -d lg-tv -i
 ```
-Se a conexão for bem-sucedida, serão exibidos o modelo real, versão do webOS e status do sistema operacional.
+Se a conexão for bem-sucedida, serão exibidos o modelo real, versão do webOS e status do sistema operacional (confirmado em teste real: modelo `43UA7500PSA.AWZFLJZ`, sdkVersion `10.3.2`, firmwareVersion `33.31.80`).
 
 ---
 
