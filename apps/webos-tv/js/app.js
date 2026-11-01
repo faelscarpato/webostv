@@ -38,6 +38,9 @@
     osdTimeout: null,
   };
 
+  let hlsInstance = null;
+  let streamTimeout = null;
+
   function getOrCreateDeviceId() {
     let id = localStorage.getItem('iptv_device_id');
     if (!id) {
@@ -78,6 +81,8 @@
     const mins = String(now.getMinutes()).padStart(2, '0');
     const timeStr = `${hours}:${mins}`;
     if (dom.osdClock) dom.osdClock.textContent = timeStr;
+    const topClock = document.getElementById('player-top-clock');
+    if (topClock) topClock.textContent = timeStr;
   }
   setInterval(updateClock, 1000);
   updateClock();
@@ -254,20 +259,48 @@
   function setupVideoPlayer() {
     const v = dom.videoPlayer;
 
-    v.addEventListener('waiting', () => showLoading(true, 'Carregando stream...'));
-    v.addEventListener('playing', () => {
+    const onStreamReady = () => {
+      if (streamTimeout) {
+        clearTimeout(streamTimeout);
+        streamTimeout = null;
+      }
       showLoading(false);
       showOsd();
+    };
+
+    v.addEventListener('playing', onStreamReady);
+    v.addEventListener('canplay', onStreamReady);
+    v.addEventListener('timeupdate', () => {
+      if (v.currentTime > 0) {
+        showLoading(false);
+      }
     });
+
+    v.addEventListener('waiting', () => {
+      if (v.currentTime === 0) {
+        showLoading(true, 'Aguardando dados da transmissão...');
+      }
+    });
+
     v.addEventListener('error', (e) => {
+      if (streamTimeout) clearTimeout(streamTimeout);
       showLoading(false);
       const code = v.error ? v.error.code : 'Desconhecido';
-      showError(`Não foi possível reproduzir este canal.\n(Código de erro: ${code})\nVerifique se o stream está online.`);
+      console.warn('Native video error:', code);
+      if (!hlsInstance) {
+        showError(`Não foi possível reproduzir este canal.\n(Código de erro: ${code})\nVerifique se o stream está online.`);
+      }
     });
   }
 
   function playChannel(index) {
     if (index < 0 || index >= state.filteredChannels.length) return;
+
+    if (streamTimeout) clearTimeout(streamTimeout);
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
 
     state.currentPlayingIndex = index;
     const channel = state.filteredChannels[index];
@@ -285,24 +318,112 @@
     dom.playerContainer.style.display = 'block';
 
     showLoading(true, `Sintonizando ${channel.name}...`);
-    dom.videoPlayer.src = channel.url;
-    dom.videoPlayer.play().catch(err => {
-      console.warn('Play falhou:', err);
-    });
+    showOsd();
+
+    // 15 seconds watchdog timeout
+    streamTimeout = setTimeout(() => {
+      showLoading(false);
+      showError(`O canal '${channel.name}' demorou mais de 15 segundos para responder.\nVerifique se o stream está online ou selecione outro canal.`);
+    }, 15000);
+
+    const streamUrl = channel.url.trim();
+
+    // Reset video element
+    dom.videoPlayer.pause();
+    dom.videoPlayer.removeAttribute('src');
+    dom.videoPlayer.load();
+
+    // Check if HLS.js is supported and stream is HLS
+    if (window.Hls && Hls.isSupported() && (streamUrl.includes('.m3u8') || streamUrl.includes('live') || !streamUrl.includes('.mp4'))) {
+      try {
+        hlsInstance = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 30,
+          manifestLoadingTimeOut: 10000,
+          levelLoadingTimeOut: 10000,
+          fragLoadingTimeOut: 15000,
+        });
+
+        hlsInstance.loadSource(streamUrl);
+        hlsInstance.attachMedia(dom.videoPlayer);
+
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+          dom.videoPlayer.play().catch(err => {
+            console.warn('Autoplay prevented, retrying muted:', err);
+            dom.videoPlayer.muted = false;
+            dom.videoPlayer.play().catch(e => console.warn('Retry play:', e));
+          });
+        });
+
+        hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+          console.warn('HLS Event Error:', data.type, data.details, data.fatal);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn('HLS Network error, attempting recovery...');
+                hlsInstance.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn('HLS Media error, attempting recovery...');
+                hlsInstance.recoverMediaError();
+                break;
+              default:
+                if (streamTimeout) clearTimeout(streamTimeout);
+                showLoading(false);
+                showError(`Falha na transmissão: ${data.details || 'Stream indisponível'}`);
+                break;
+            }
+          }
+        });
+      } catch (hlsErr) {
+        console.warn('HLS.js initialization failed, falling back to native player:', hlsErr);
+        dom.videoPlayer.src = streamUrl;
+        dom.videoPlayer.play().catch(e => console.warn('Native fallback failed:', e));
+      }
+    } else {
+      // Direct native playback
+      dom.videoPlayer.src = streamUrl;
+      dom.videoPlayer.play().catch(err => {
+        console.warn('Native play failed:', err);
+      });
+    }
   }
 
   function showOsd() {
     dom.playerOsd.classList.add('visible');
+    const topBar = document.getElementById('player-top-bar');
+    if (topBar) topBar.classList.add('visible');
+
     if (state.osdTimeout) clearTimeout(state.osdTimeout);
     state.osdTimeout = setTimeout(() => {
       dom.playerOsd.classList.remove('visible');
-    }, 4500);
+      if (topBar) topBar.classList.remove('visible');
+    }, 5000);
+  }
+
+  function hideOsd() {
+    dom.playerOsd.classList.remove('visible');
+    const topBar = document.getElementById('player-top-bar');
+    if (topBar) topBar.classList.remove('visible');
   }
 
   function stopPlayerAndReturn() {
+    if (streamTimeout) {
+      clearTimeout(streamTimeout);
+      streamTimeout = null;
+    }
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+
     dom.videoPlayer.pause();
     dom.videoPlayer.removeAttribute('src');
     dom.videoPlayer.load();
+
+    showLoading(false);
+    hideOsd();
 
     dom.playerContainer.style.display = 'none';
     dom.mainView.style.display = 'flex';
@@ -423,9 +544,36 @@
     }
   }
 
+  function isBackKey(e) {
+    const code = e.keyCode || e.which;
+    const key = e.key;
+    return (
+      code === 461 || // webOS Back button
+      code === 27 ||  // ESC
+      code === 8 ||   // Backspace
+      code === 10009 || // Smart TV Return
+      key === 'Back' ||
+      key === 'GoBack' ||
+      key === 'Escape'
+    );
+  }
+
   // Key Event Navigation Handler
   function setupEventListeners() {
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', (e) => {
+      if (isBackKey(e) && (state.currentView === 'player' || state.currentView === 'error')) {
+        e.preventDefault();
+        e.stopPropagation();
+        stopPlayerAndReturn();
+      }
+    }, true);
+
+    window.addEventListener('popstate', (e) => {
+      if (state.currentView === 'player' || state.currentView === 'error') {
+        stopPlayerAndReturn();
+      }
+    });
 
     // Click handler fallback for mouse/magic remote pointer
     document.addEventListener('click', (e) => {
@@ -444,11 +592,30 @@
   }
 
   function handleKeyDown(e) {
-    const key = e.keyCode;
+    const key = e.keyCode || e.which;
+
+    // Global Back Key interception
+    if (isBackKey(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (state.currentView === 'player' || state.currentView === 'error') {
+        stopPlayerAndReturn();
+        return;
+      }
+
+      if (state.currentView === 'main' && state.focusArea === 'channels') {
+        state.focusArea = 'sidebar';
+        updateChannelFocus();
+        updateSidebarSelection();
+        return;
+      }
+      return;
+    }
 
     // View: ERROR
     if (state.currentView === 'error') {
-      if (key === KEYS.ENTER || key === KEYS.BACK || key === KEYS.BACK_BROWSER) {
+      if (key === KEYS.ENTER) {
         hideError();
       }
       return;
@@ -468,7 +635,8 @@
 
     // View: PLAYER (Fullscreen)
     if (state.currentView === 'player') {
-      if (key === KEYS.BACK || key === KEYS.BACK_BROWSER) {
+      if (key === KEYS.LEFT) {
+        // Left arrow exits back to channel list
         stopPlayerAndReturn();
       } else if (key === KEYS.ENTER) {
         showOsd();
@@ -546,9 +714,10 @@
     }
   }
 
-  // Expose pairing submit button
+  // Expose global button callbacks
   window.submitPairing = submitPairing;
   window.hideError = hideError;
+  window.stopPlayerAndReturn = stopPlayerAndReturn;
 
   window.addEventListener('DOMContentLoaded', init);
 })();

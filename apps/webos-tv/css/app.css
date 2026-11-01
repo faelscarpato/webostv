@@ -62,6 +62,40 @@ body {
 }
 
 /* OSD (On-Screen Display) Info Bar */
+#player-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 30px 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 12;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: auto;
+}
+
+#player-top-bar.visible {
+  opacity: 1;
+}
+
+.hud-btn {
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid var(--focus-border);
+  color: white;
+  font-size: 26px;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 #player-osd {
   position: absolute;
   bottom: 0;

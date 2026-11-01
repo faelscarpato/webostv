@@ -10,6 +10,12 @@
   <!-- Fullscreen Video Player Layer -->
   <div id="player-container" style="display: none;">
     <video id="video-player" playsinline></video>
+    <div id="player-top-bar">
+      <button id="player-back-btn" class="hud-btn focusable" onclick="stopPlayerAndReturn()">
+        ◀ Voltar aos Canais
+      </button>
+      <div id="player-top-clock" style="font-size: 32px; font-weight: bold; color: var(--text-dim);">00:00</div>
+    </div>
     <div id="player-osd">
       <div>
         <div class="osd-channel-num" id="osd-channel-num">CANAL 1</div>
@@ -26,7 +32,10 @@
   <!-- Loading Overlay -->
   <div id="loading-overlay">
     <div class="spinner"></div>
-    <div class="loading-text">Carregando...</div>
+    <div class="loading-text">Carregando stream...</div>
+    <button id="loading-cancel-btn" class="btn-large focusable" style="margin-top: 36px; padding: 18px 36px; font-size: 26px; background: rgba(239, 68, 68, 0.85); color: white;" onclick="stopPlayerAndReturn()">
+      ◀ Cancelar e Voltar aos Canais
+    </button>
   </div>
 
   <!-- Error Modal -->
@@ -88,6 +97,7 @@
     </div>
   </div>
 
+  <script src="js/hls.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
