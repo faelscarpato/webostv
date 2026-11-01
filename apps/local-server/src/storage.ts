@@ -157,11 +157,18 @@ export class LocalStorageManager {
     this.recomputeEPG();
   }
 
-  public getChannels(filter?: { group?: string; favoritesOnly?: boolean; search?: string }): Channel[] {
+  public getChannels(filter?: {
+    group?: string;
+    favoritesOnly?: boolean;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): { total: number; page: number; limit: number; totalPages: number; channels: Channel[] } {
     let list = this.cachedChannels;
 
     if (filter?.group) {
-      list = list.filter(c => c.groupTitle.toLowerCase() === filter.group!.toLowerCase());
+      const g = filter.group.toLowerCase();
+      list = list.filter(c => c.groupTitle.toLowerCase() === g);
     }
 
     if (filter?.favoritesOnly) {
@@ -173,7 +180,20 @@ export class LocalStorageManager {
       list = list.filter(c => c.name.toLowerCase().includes(q) || c.groupTitle.toLowerCase().includes(q));
     }
 
-    return list;
+    const total = list.length;
+    const page = Math.max(1, filter?.page || 1);
+    const limit = Math.max(1, Math.min(filter?.limit || 50, 200)); // Default 50, max 200 per page
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const pagedChannels = list.slice(startIndex, startIndex + limit);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages,
+      channels: pagedChannels,
+    };
   }
 
   public getChannelById(id: string): Channel | undefined {

@@ -45,7 +45,7 @@ export function createLocalServer(config: ServerConfig) {
       };
 
       // Read Body helper
-      const readBody = async (maxBytes = 25 * 1024 * 1024): Promise<string> => {
+      const readBody = async (maxBytes = 250 * 1024 * 1024): Promise<string> => {
         return new Promise((resolve, reject) => {
           let body = '';
           let totalBytes = 0;
@@ -54,7 +54,7 @@ export function createLocalServer(config: ServerConfig) {
           req.on('data', chunk => {
             totalBytes += Buffer.byteLength(chunk, 'utf-8');
             if (totalBytes > maxBytes) {
-              reject(new Error('Tamanho máximo da requisição excedido (limite 25MB)'));
+              reject(new Error('Tamanho máximo da requisição excedido (limite 250MB)'));
               req.destroy();
               return;
             }
@@ -179,12 +179,11 @@ export function createLocalServer(config: ServerConfig) {
         const group = parsedUrl.searchParams.get('group') || undefined;
         const favoritesOnly = parsedUrl.searchParams.get('favorites') === 'true';
         const search = parsedUrl.searchParams.get('search') || undefined;
+        const page = parseInt(parsedUrl.searchParams.get('page') || '1', 10);
+        const limit = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
 
-        const channels = storage.getChannels({ group, favoritesOnly, search });
-        return sendJson(200, {
-          total: channels.length,
-          channels,
-        });
+        const result = storage.getChannels({ group, favoritesOnly, search, page, limit });
+        return sendJson(200, result);
       }
 
       // GET /api/channels/:id

@@ -402,6 +402,12 @@
         <div id="channels-container" class="channel-list">
           <div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal carregado. Importe uma playlist na aba M3U.</div>
         </div>
+
+        <div id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--card-border);">
+          <button class="btn btn-outline" id="prev-page-btn" onclick="changePage(-1)" disabled>◀ Anterior</button>
+          <span id="page-info" style="font-size: 0.9rem; color: var(--text-muted);">Página 1 de 1 (0 canais)</span>
+          <button class="btn btn-outline" id="next-page-btn" onclick="changePage(1)" disabled>Próximo ▶</button>
+        </div>
       </div>
     </div>
 
@@ -480,10 +486,15 @@
       ? window.location.origin
       : 'http://localhost:3001';
 
-    let allChannels = [];
+    let currentPageChannels = [];
     let allGroups = [];
     let isFavFilterActive = false;
     let pinTimerInterval = null;
+    let searchDebounce = null;
+    let currentPage = 1;
+    let pageSize = 40;
+    let totalPages = 1;
+    let totalChannelsCount = 0;
 
     async function checkHealth() {
       try {
@@ -494,10 +505,10 @@
           document.getElementById('server-status-badge').textContent = 'Online';
           document.getElementById('server-host-label').textContent = `${API_BASE}`;
 
-          document.getElementById('stat-total-channels').textContent = data.totalChannels;
-          document.getElementById('stat-active-channels').textContent = data.activeChannels;
-          document.getElementById('stat-total-groups').textContent = data.totalGroups;
-          document.getElementById('stat-fav-channels').textContent = data.favoriteChannels;
+          document.getElementById('stat-total-channels').textContent = Number(data.totalChannels).toLocaleString('pt-BR');
+          document.getElementById('stat-active-channels').textContent = Number(data.activeChannels).toLocaleString('pt-BR');
+          document.getElementById('stat-total-groups').textContent = Number(data.totalGroups).toLocaleString('pt-BR');
+          document.getElementById('stat-fav-channels').textContent = Number(data.favoriteChannels).toLocaleString('pt-BR');
         } else {
           throw new Error('Offline');
         }
@@ -525,20 +536,58 @@
       if (tabName === 'epg') buttons[3].classList.add('active');
     }
 
-    async function loadChannels() {
+    async function loadGroups() {
       try {
-        const res = await fetch(`${API_BASE}/api/channels`);
-        const data = await res.json();
-        allChannels = data.channels || [];
-
         const groupRes = await fetch(`${API_BASE}/api/groups`);
         const groupData = await groupRes.json();
         allGroups = groupData.groups || [];
-
         populateGroupsDropdown();
-        renderChannels(allChannels);
       } catch (err) {
-        console.error('Falha ao carregar canais:', err);
+        console.error('Falha ao carregar grupos:', err);
+      }
+    }
+
+    async function fetchChannelsPage() {
+      const search = document.getElementById('search-input').value.trim();
+      const selectedGroup = document.getElementById('group-select').value;
+      const container = document.getElementById('channels-container');
+
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: pageSize,
+      });
+
+      if (search) params.append('search', search);
+      if (selectedGroup) params.append('group', selectedGroup);
+      if (isFavFilterActive) params.append('favorites', 'true');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/channels?${params.toString()}`);
+        const data = await res.json();
+
+        currentPageChannels = data.channels || [];
+        currentPage = data.page || 1;
+        totalPages = data.totalPages || 1;
+        totalChannelsCount = data.total || 0;
+
+        renderChannels(currentPageChannels);
+        updatePaginationUI();
+      } catch (err) {
+        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--danger);">Falha ao carregar canais: ${err.message}</div>`;
+      }
+    }
+
+    function updatePaginationUI() {
+      document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (${totalChannelsCount.toLocaleString('pt-BR')} canais)`;
+      document.getElementById('prev-page-btn').disabled = currentPage <= 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
+    }
+
+    function changePage(delta) {
+      const newPage = currentPage + delta;
+      if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        fetchChannelsPage();
       }
     }
 
@@ -548,23 +597,17 @@
       allGroups.forEach(g => {
         const opt = document.createElement('option');
         opt.value = g.name;
-        opt.textContent = `${g.name} (${g.count})`;
+        opt.textContent = `${g.name} (${g.count.toLocaleString('pt-BR')})`;
         select.appendChild(opt);
       });
     }
 
     function filterChannels() {
-      const search = document.getElementById('search-input').value.toLowerCase();
-      const selectedGroup = document.getElementById('group-select').value;
-
-      const filtered = allChannels.filter(c => {
-        const matchesSearch = c.name.toLowerCase().includes(search);
-        const matchesGroup = !selectedGroup || c.groupTitle.toLowerCase() === selectedGroup.toLowerCase();
-        const matchesFav = !isFavFilterActive || c.isFavorite;
-        return matchesSearch && matchesGroup && matchesFav;
-      });
-
-      renderChannels(filtered);
+      if (searchDebounce) clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        currentPage = 1;
+        fetchChannelsPage();
+      }, 300);
     }
 
     function toggleFavFilter() {
@@ -577,20 +620,21 @@
         btn.classList.remove('btn-primary');
         btn.classList.add('btn-outline');
       }
-      filterChannels();
+      currentPage = 1;
+      fetchChannelsPage();
     }
 
     function renderChannels(list) {
       const container = document.getElementById('channels-container');
       if (!list || list.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal encontrado.</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal encontrado nesta página ou filtro.</div>';
         return;
       }
 
       container.innerHTML = list.map(c => `
         <div class="channel-item ${c.isHidden ? 'hidden-chan' : ''}">
           <div class="channel-info">
-            ${c.logoUrl ? `<img src="${c.logoUrl}" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
+            ${c.logoUrl ? `<img src="${c.logoUrl}" loading="lazy" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
             <div>
               <div class="channel-name" title="${c.name}">${c.name}</div>
               <div class="channel-group-tag">${c.groupTitle} ${c.originalName !== c.name ? `(orig: ${c.originalName})` : ''}</div>
@@ -611,9 +655,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isFavorite }),
       });
-      const ch = allChannels.find(c => c.id === channelId);
+      const ch = currentPageChannels.find(c => c.id === channelId);
       if (ch) ch.isFavorite = isFavorite;
-      filterChannels();
+      renderChannels(currentPageChannels);
       checkHealth();
     }
 
@@ -623,9 +667,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isHidden }),
       });
-      const ch = allChannels.find(c => c.id === channelId);
+      const ch = currentPageChannels.find(c => c.id === channelId);
       if (ch) ch.isHidden = isHidden;
-      filterChannels();
+      renderChannels(currentPageChannels);
       checkHealth();
     }
 
@@ -637,9 +681,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newName.trim() }),
         });
-        const ch = allChannels.find(c => c.id === channelId);
+        const ch = currentPageChannels.find(c => c.id === channelId);
         if (ch) ch.name = newName.trim();
-        filterChannels();
+        renderChannels(currentPageChannels);
       }
     }
 
@@ -664,9 +708,11 @@
           });
           const data = await res.json();
           if (res.ok) {
-            statusDiv.innerHTML = `<div class="alert alert-info">✅ Sucesso! ${data.status.totalChannels} canais carregados em ${data.status.totalGroups} categorias.</div>`;
+            statusDiv.innerHTML = `<div class="alert alert-info">✅ Sucesso! ${Number(data.status.totalChannels).toLocaleString('pt-BR')} canais carregados em ${data.status.totalGroups} categorias.</div>`;
             await checkHealth();
-            await loadChannels();
+            await loadGroups();
+            currentPage = 1;
+            await fetchChannelsPage();
           } else {
             statusDiv.innerHTML = `<div class="alert alert-error">Erro: ${data.error}</div>`;
           }
@@ -835,8 +881,12 @@
     }
 
     // Inicialização
-    checkHealth();
-    loadChannels();
+    async function startApp() {
+      await checkHealth();
+      await loadGroups();
+      await fetchChannelsPage();
+    }
+    startApp();
     setInterval(checkHealth, 10000);
   </script>
 </body>

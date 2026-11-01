@@ -137,6 +137,12 @@ export function parseM3U(content: string, options: ParseM3UOptions = {}): ParseM
  * Extracts attributes and channel name from an #EXTINF line.
  * Example: #EXTINF:-1 tvg-id="Globo.br" tvg-name="TV Globo" tvg-logo="http://..." group-title="Abertos",Globo HD
  */
+const DURATION_REGEX = /^([-\d]+)/;
+const TVG_ID_REGEX = /tvg-id=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i;
+const TVG_NAME_REGEX = /tvg-name=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i;
+const TVG_LOGO_REGEX = /tvg-logo=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i;
+const GROUP_TITLE_REGEX = /group-title=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i;
+
 function parseExtInfLine(line: string): {
   duration: number;
   tvgId?: string;
@@ -159,31 +165,28 @@ function parseExtInfLine(line: string): {
   }
 
   // Parse duration (first token)
-  const durationMatch = attributesPart.match(/^([-\d]+)/);
+  const durationMatch = attributesPart.match(DURATION_REGEX);
   const duration = durationMatch ? parseInt(durationMatch[1], 10) : -1;
 
-  // Extract key="value" or key='value' or key=value
-  const tvgId = extractAttribute(attributesPart, 'tvg-id');
-  const tvgName = extractAttribute(attributesPart, 'tvg-name');
-  const tvgLogo = extractAttribute(attributesPart, 'tvg-logo');
-  const groupTitle = extractAttribute(attributesPart, 'group-title');
+  // Extract key="value" or key='value' or key=value using precompiled regexes
+  const tvgIdMatch = attributesPart.match(TVG_ID_REGEX);
+  const tvgId = tvgIdMatch ? (tvgIdMatch[1] ?? tvgIdMatch[2] ?? tvgIdMatch[3]) : undefined;
+
+  const tvgNameMatch = attributesPart.match(TVG_NAME_REGEX);
+  const tvgName = tvgNameMatch ? (tvgNameMatch[1] ?? tvgNameMatch[2] ?? tvgNameMatch[3]) : undefined;
+
+  const tvgLogoMatch = attributesPart.match(TVG_LOGO_REGEX);
+  const tvgLogo = tvgLogoMatch ? (tvgLogoMatch[1] ?? tvgLogoMatch[2] ?? tvgLogoMatch[3]) : undefined;
+
+  const groupTitleMatch = attributesPart.match(GROUP_TITLE_REGEX);
+  const groupTitle = groupTitleMatch ? (groupTitleMatch[1] ?? groupTitleMatch[2] ?? groupTitleMatch[3]) : undefined;
 
   return {
     duration,
-    tvgId: tvgId || undefined,
-    tvgName: tvgName || undefined,
-    tvgLogo: tvgLogo || undefined,
-    groupTitle: groupTitle || undefined,
+    tvgId,
+    tvgName,
+    tvgLogo,
+    groupTitle,
     name,
   };
-}
-
-function extractAttribute(text: string, attribute: string): string | null {
-  // Regex supporting quotes and unquoted values
-  const regex = new RegExp(`${attribute}=(?:"([^"]*)"|'([^']*)'|([^\\s,]+))`, 'i');
-  const match = text.match(regex);
-  if (match) {
-    return match[1] ?? match[2] ?? match[3] ?? null;
-  }
-  return null;
 }

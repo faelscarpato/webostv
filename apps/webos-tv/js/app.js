@@ -96,25 +96,25 @@
 
   // Network Calls
   async function loadData() {
-    showLoading(true, 'Carregando lista de canais...');
+    showLoading(true, 'Carregando lista de categorias...');
     try {
       const headers = { 'Authorization': `Bearer ${state.deviceToken}` };
+
+      // Load Status
+      const statusRes = await fetch(`${state.serverUrl}/api/status`, { headers });
+      const statusData = statusRes.ok ? await statusRes.json() : null;
 
       // Load Groups
       const groupRes = await fetch(`${state.serverUrl}/api/groups`, { headers });
       if (!groupRes.ok) throw new Error('Não autorizado ou servidor indisponível');
       const groupData = await groupRes.json();
 
-      // Load Channels
-      const chanRes = await fetch(`${state.serverUrl}/api/channels`, { headers });
-      if (!chanRes.ok) throw new Error('Erro ao carregar canais');
-      const chanData = await chanRes.json();
-
       state.groups = groupData.groups || [];
-      state.allChannels = (chanData.channels || []).filter(c => !c.isHidden);
+      state.totalChannelsCount = statusData ? statusData.totalChannels : 0;
+      state.favChannelsCount = statusData ? statusData.favoriteChannels : 0;
 
       renderSidebar();
-      selectSidebarCategory(0);
+      await selectSidebarCategory(0);
       showLoading(false);
       showMainView();
     } catch (err) {
@@ -132,15 +132,14 @@
     const favItem = document.createElement('div');
     favItem.className = 'sidebar-item focusable';
     favItem.dataset.type = 'fav';
-    const favCount = state.allChannels.filter(c => c.isFavorite).length;
-    favItem.innerHTML = `<span>⭐ Favoritos</span><span class="sidebar-badge">${favCount}</span>`;
+    favItem.innerHTML = `<span>⭐ Favoritos</span><span class="sidebar-badge">${state.favChannelsCount || 0}</span>`;
     dom.sidebarMenu.appendChild(favItem);
 
     // Fixed item: Todos os Canais
     const allItem = document.createElement('div');
     allItem.className = 'sidebar-item focusable';
     allItem.dataset.type = 'all';
-    allItem.innerHTML = `<span>📺 Todos</span><span class="sidebar-badge">${state.allChannels.length}</span>`;
+    allItem.innerHTML = `<span>📺 Todos</span><span class="sidebar-badge">${state.totalChannelsCount || 0}</span>`;
     dom.sidebarMenu.appendChild(allItem);
 
     // Dynamic Groups
@@ -173,7 +172,7 @@
     });
   }
 
-  function selectSidebarCategory(index) {
+  async function selectSidebarCategory(index) {
     state.sidebarIndex = index;
     updateSidebarSelection();
 
@@ -182,21 +181,30 @@
     if (!selectedItem) return;
 
     const type = selectedItem.dataset.type;
+    const headers = { 'Authorization': `Bearer ${state.deviceToken}` };
+    let url = `${state.serverUrl}/api/channels?limit=100`;
+
     if (type === 'fav') {
-      state.filteredChannels = state.allChannels.filter(c => c.isFavorite);
+      url += '&favorites=true';
       dom.contentTitle.textContent = 'Canais Favoritos';
     } else if (type === 'all') {
-      state.filteredChannels = state.allChannels;
       dom.contentTitle.textContent = 'Todos os Canais';
     } else if (type === 'group') {
       const gName = selectedItem.dataset.name;
-      state.filteredChannels = state.allChannels.filter(c => c.groupTitle.toLowerCase() === gName.toLowerCase());
+      url += `&group=${encodeURIComponent(gName)}`;
       dom.contentTitle.textContent = gName;
     }
 
-    dom.contentSubtitle.textContent = `${state.filteredChannels.length} canais disponíveis`;
-    state.channelIndex = 0;
-    renderChannels();
+    try {
+      const res = await fetch(url, { headers });
+      const data = await res.json();
+      state.filteredChannels = (data.channels || []).filter(c => !c.isHidden);
+      dom.contentSubtitle.textContent = `${data.total || state.filteredChannels.length} canais disponíveis`;
+      state.channelIndex = 0;
+      renderChannels();
+    } catch (err) {
+      console.error('Falha ao carregar categoria:', err);
+    }
   }
 
   // Render Channels
@@ -214,7 +222,7 @@
       card.dataset.index = idx;
 
       const logoHtml = ch.logoUrl
-        ? `<img src="${ch.logoUrl}" class="channel-logo-img" onerror="this.outerHTML='<div class=\\'channel-logo-img\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;\\'>TV</div>'">`
+        ? `<img src="${ch.logoUrl}" loading="lazy" class="channel-logo-img" onerror="this.outerHTML='<div class=\\'channel-logo-img\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;\\'>TV</div>'">`
         : `<div class="channel-logo-img" style="display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;">TV</div>`;
 
       card.innerHTML = `
