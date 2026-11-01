@@ -78,12 +78,20 @@ export function createLocalServer(config: ServerConfig) {
 
       // Serve Manager Web UI
       if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
-        const managerHtmlPath = path.resolve(config.dataDir, '../apps/manager/index.html');
-        if (fs.existsSync(managerHtmlPath)) {
-          const html = fs.readFileSync(managerHtmlPath, 'utf-8');
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(html);
-          return;
+        const candidatePaths = [
+          path.resolve(process.cwd(), 'apps/manager/index.html'),
+          path.resolve(config.dataDir, '../apps/manager/index.html'),
+          path.resolve(config.dataDir, '../../apps/manager/index.html'),
+          path.resolve(config.dataDir, 'apps/manager/index.html'),
+        ];
+
+        for (const candidate of candidatePaths) {
+          if (fs.existsSync(candidate)) {
+            const html = fs.readFileSync(candidate, 'utf-8');
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(html);
+            return;
+          }
         }
       }
 
