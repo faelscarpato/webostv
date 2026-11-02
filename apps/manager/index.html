@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IPTV Local - Painel de Controle</title>
+  <link rel="icon" type="image/png" href="/logo-ui.png">
   <style>
     :root {
       --bg: #0b0f19;
@@ -46,16 +47,12 @@
       align-items: center;
       gap: 0.75rem;
     }
-    .brand-logo {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #38bdf8, #6366f1);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: white;
+    .brand-logo-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
     }
     .brand-title {
       font-size: 1.25rem;
@@ -349,7 +346,7 @@
 <body>
   <header>
     <div class="brand">
-      <div class="brand-logo">IP</div>
+      <img src="/logo-ui.png" alt="IPTV Local Logo" class="brand-logo-img">
       <div>
         <div class="brand-title">IPTV Local Manager</div>
         <div style="font-size: 0.75rem; color: var(--text-muted);">Serviço Doméstico Privado</div>

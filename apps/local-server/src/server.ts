@@ -95,6 +95,26 @@ export function createLocalServer(config: ServerConfig) {
         }
       }
 
+      // Serve Manager Static Assets (Logo, Favicon)
+      if (req.method === 'GET' && (pathname === '/logo.png' || pathname === '/logo-ui.png' || pathname === '/favicon.ico')) {
+        const fileName = pathname === '/favicon.ico' ? 'logo-ui.png' : pathname.slice(1);
+        const candidatePaths = [
+          path.resolve(process.cwd(), 'apps/manager', fileName),
+          path.resolve(process.cwd(), fileName),
+          path.resolve(config.dataDir, '../apps/manager', fileName),
+          path.resolve(config.dataDir, fileName),
+        ];
+
+        for (const candidate of candidatePaths) {
+          if (fs.existsSync(candidate)) {
+            const img = fs.readFileSync(candidate);
+            res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+            res.end(img);
+            return;
+          }
+        }
+      }
+
       // Route handling
       // GET /api/status
       if (req.method === 'GET' && pathname === '/api/status') {

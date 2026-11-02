@@ -15,4 +15,7 @@ uploads/
 *.xml
 link_lista.txt
 *.local.*
+canais.txt
+*_playlist.txt
+*.txt
 
