@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StreamOS Live - Guia EPG</title>
+<!-- Google Fonts: Sora, Outfit, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Sora:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#ffb2bd",
+            "surface-container-high": "#262a35",
+            "on-tertiary-fixed": "#002110",
+            "secondary-container": "#e1005a",
+            "on-secondary-fixed": "#400014",
+            "on-tertiary-fixed-variant": "#005230",
+            "inverse-surface": "#dfe2f2",
+            "inverse-on-surface": "#2c303c",
+            "on-secondary": "#670024",
+            "secondary-fixed": "#ffd9dd",
+            "primary-fixed": "#b6ebff",
+            "error-container": "#93000a",
+            "on-primary-fixed": "#001f28",
+            "surface-dim": "#0f131e",
+            "on-surface": "#dfe2f2",
+            "surface-variant": "#313441",
+            "on-primary": "#003543",
+            "on-secondary-container": "#fff6f6",
+            "surface-tint": "#47d6ff",
+            "inverse-primary": "#00677f",
+            "on-tertiary": "#003920",
+            "outline": "#859399",
+            "surface-container": "#1b1f2b",
+            "error": "#ffb4ab",
+            "tertiary-fixed-dim": "#00e38e",
+            "tertiary-container": "#00dd8b",
+            "on-primary-container": "#00566a",
+            "on-background": "#dfe2f2",
+            "on-error-container": "#ffdad6",
+            "primary-container": "#00d2ff",
+            "on-secondary-fixed-variant": "#900037",
+            "outline-variant": "#3c494e",
+            "primary-fixed-dim": "#47d6ff",
+            "background": "#0f131e",
+            "surface-bright": "#353945",
+            "primary": "#a5e7ff",
+            "on-tertiary-container": "#005b36",
+            "surface-container-low": "#171b26",
+            "on-error": "#690005",
+            "surface-container-lowest": "#0a0e19",
+            "on-surface-variant": "#bbc9cf",
+            "tertiary": "#00fd9f",
+            "secondary": "#ffb2bd",
+            "surface-container-highest": "#313441",
+            "surface": "#0f131e",
+            "on-primary-fixed-variant": "#004e60",
+            "tertiary-fixed": "#54ffaa"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.75rem",
+            "space-xs": "0.5rem",
+            "space-xl": "3rem",
+            "margin": "3.5rem",
+            "space-lg": "2rem",
+            "gutter": "1.5rem",
+            "space-md": "1.25rem"
+          },
+          "fontFamily": {
+            "headline-sm": ["Sora"],
+            "body-md": ["Outfit"],
+            "label-lg": ["Outfit"],
+            "headline-lg": ["Sora"],
+            "headline-md": ["Sora"],
+            "body-lg": ["Outfit"],
+            "label-shortcut": ["Sora"],
+            "headline-xl": ["Sora"],
+            "body-xl": ["Outfit"],
+            "label-tech": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "headline-sm": ["26px", { "lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-md": ["18px", { "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-lg": ["16px", { "lineHeight": "22px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-lg": ["40px", { "lineHeight": "50px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-md": ["32px", { "lineHeight": "40px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-shortcut": ["14px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+            "headline-xl": ["56px", { "lineHeight": "68px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-xl": ["24px", { "lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-tech": ["14px", { "lineHeight": "18px", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* 10-ft TV Smooth Scrolling and Glow Effects */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .focus-tv-active {
+      transform: scale(1.02);
+      box-shadow: 0 0 0 3px #00d2ff, 0 10px 30px rgba(0, 210, 255, 0.45);
+      z-index: 30;
+    }
+    .neon-pulse {
+      animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.8)); }
+      50% { opacity: 0.7; filter: drop-shadow(0 0 2px rgba(0, 210, 255, 0.3)); }
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased overflow-hidden select-none font-body-md text-body-md w-screen h-screen flex flex-col justify-between">
+<!-- ================= TOP APP BAR (Shared Component JSON Source) ================= -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-2xl flex justify-between items-center w-full px-margin py-space-sm border-b border-outline-variant/30">
+<!-- Brand Logo & Local Server Node Status -->
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="text-headline-sm font-headline-sm font-bold text-primary tracking-wider flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary-container neon-pulse"></span>
+          StreamOS Live
+        </span>
+</div>
+<div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-outline-variant/40 text-label-tech font-label-tech text-on-surface-variant">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="router">router</span>
+<span>Servidor Local: 192.168.1.120:8080 · Ping 1.8ms · Anti-SSRF Ativo</span>
+</div>
+</div>
+<!-- Navigation Links (Guia EPG active as this is the complete EPG Grid view) -->
+<nav class="flex items-center gap-space-lg">
+<a class="text-on-surface-variant font-medium text-label-lg font-label-lg hover:text-primary transition-colors" href="#">
+        TV Ao Vivo
+      </a>
+<a class="text-primary border-b-2 border-primary font-bold text-label-lg font-label-lg flex items-center gap-1.5 py-1" href="#">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+        Guia EPG
+      </a>
+<a class="text-on-surface-variant font-medium text-label-lg font-label-lg hover:text-primary transition-colors" href="#">
+        Gravações
+      </a>
+<a class="text-on-surface-variant font-medium text-label-lg font-label-lg hover:text-primary transition-colors" href="#">
+        Servidor Local
+      </a>
+</nav>
+<!-- Trailing TV Actions & Current Day/Time Clock -->
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-2 text-right">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="calendar_month">calendar_month</span>
+<span class="font-headline-sm text-label-lg text-primary tracking-wide">Hoje, 24 de Outubro · <span class="font-bold text-on-surface font-label-tech">15:46</span></span>
+</div>
+<div class="flex items-center gap-2 border-l border-outline-variant/40 pl-space-md">
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="network_check">network_check</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+</button>
+</div>
+</div>
+</header>
+<!-- ================= CANVAS CONTENT AREA (10-ft TV Layout Inside Safe-Margin) ================= -->
+<main class="flex-1 flex flex-col justify-start pt-[84px] pb-[72px] px-margin overflow-hidden gap-3">
+<!-- SUBHEADER: Categories Filter Pill Row & Date Picker Ribbon -->
+<div class="flex items-center justify-between py-1 border-b border-outline-variant/20">
+<!-- Quick Categories -->
+<div class="flex items-center gap-2">
+<button class="px-4 py-1.5 rounded-full text-label-lg font-label-lg bg-surface-container text-on-surface-variant hover:text-primary transition-all">
+          Todos os Canais
+        </button>
+<button class="px-5 py-1.5 rounded-full text-label-lg font-label-lg bg-primary-container text-on-primary-container font-bold shadow-lg shadow-primary-container/20 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm" data-icon="sports_soccer">sports_soccer</span>
+          Esportes (Ativo)
+        </button>
+<button class="px-4 py-1.5 rounded-full text-label-lg font-label-lg bg-surface-container text-on-surface-variant hover:text-primary transition-all">
+          Notícias
+        </button>
+<button class="px-4 py-1.5 rounded-full text-label-lg font-label-lg bg-surface-container text-on-surface-variant hover:text-primary transition-all">
+          Filmes &amp; Séries
+        </button>
+<button class="px-4 py-1.5 rounded-full text-label-lg font-label-lg bg-surface-container text-on-surface-variant hover:text-primary transition-all">
+          Documentários
+        </button>
+<button class="px-4 py-1.5 rounded-full text-label-lg font-label-lg bg-surface-container text-on-surface-variant hover:text-primary transition-all flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-sm text-tertiary" data-icon="star" data-weight="fill" style="font-variation-settings: 'FILL' 1;">star</span>
+          Favoritos
+        </button>
+</div>
+<!-- Date Ribbon Selector -->
+<div class="flex items-center gap-3 bg-surface-container-low px-4 py-1.5 rounded-xl border border-outline-variant/30 text-label-lg font-label-lg">
+<button class="text-on-surface-variant hover:text-primary flex items-center">
+<span class="material-symbols-outlined text-lg" data-icon="chevron_left">chevron_left</span>
+          Ontem
+        </button>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<button class="text-primary font-bold flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high border border-primary-container/40">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-ping"></span>
+          Hoje (Ao Vivo)
+        </button>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<button class="text-on-surface-variant hover:text-primary flex items-center">
+          Amanhã
+          <span class="material-symbols-outlined text-lg" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- 1. TOP/PREVIEW DETAIL HERO CARD (Currently Focused Broadcast: Channel 042 PREMIERE HD) -->
+<section class="w-full bg-surface-container/70 backdrop-blur-2xl rounded-2xl border border-outline-variant/30 p-4 shadow-xl flex items-center justify-between gap-6 shrink-0 h-[178px]">
+<!-- Left Info Stack -->
+<div class="flex-1 flex flex-col justify-between h-full">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="px-2.5 py-0.5 rounded-md bg-secondary-container text-on-secondary-container font-label-tech text-xs tracking-wider flex items-center gap-1 font-bold">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+              NO AR
+            </span>
+<span class="px-3 py-0.5 rounded-md bg-surface-container-high border border-outline-variant/40 font-label-tech text-primary font-bold text-sm">
+              042 PREMIERE HD
+            </span>
+<span class="text-label-tech font-label-tech text-on-surface-variant text-xs">
+              15:00 - 17:00 (120 min) · <span class="text-tertiary font-bold">Restam 34 min</span>
+</span>
+</div>
+<h1 class="text-headline-sm font-headline-sm text-on-surface leading-tight font-bold tracking-tight">
+            Final da Supercopa 2025: Flamengo vs Palmeiras (Ao Vivo - 2º Tempo)
+          </h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1 line-clamp-1 max-w-4xl">
+            Transmissão ao vivo e em 4K HDR do clássico decisivo com narração exclusiva e áudio Dolby 5.1 original. Estádio Mané Garrincha lotado para a grande decisão nacional.
+          </p>
+</div>
+<!-- Technical Badges & Quick Remote Prompts -->
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-label-tech font-label-tech text-xs text-on-surface">4K UHD</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-label-tech font-label-tech text-xs text-on-surface">HDR10</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-label-tech font-label-tech text-xs text-on-surface">HEVC Main 10</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-label-tech font-label-tech text-xs text-primary">5.1 Surround</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-label-tech font-label-tech text-xs text-tertiary">60 FPS</span>
+</div>
+<!-- Quick Actions on Remote -->
+<div class="flex items-center gap-4 text-label-tech font-label-tech text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5 text-primary font-bold">
+<span class="px-1.5 py-0.5 rounded bg-primary-container text-on-primary-container font-extrabold text-[11px]">OK</span>
+              Sintonizar Agora
+            </span>
+<span class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary font-bold text-[11px]">REC</span>
+              Agendar Gravação
+            </span>
+<span class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-tertiary font-bold text-[11px]">★</span>
+              Favoritar
+            </span>
+</div>
+</div>
+</div>
+<!-- Right PIP Video Live Thumbnail with Elapsed Progress Bar -->
+<div class="w-64 h-full relative rounded-xl overflow-hidden border border-primary/50 shadow-2xl flex-shrink-0 group">
+<div class="w-full h-full bg-cover bg-center" data-alt="A vivid, wide-angle cinematic shot of a professional football match under stadium floodlights, showcasing dramatic turf textures and intense player competition in deep dark-mode stadium atmospheres with electric blue and emerald pitch lighting." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCyGQE56dN3Wmf5xnj2h_Vyw2Y6ksx8X0aauZv-X7utsbig9RrZPeZ_F6-k2GPfxbgXx8euFBmUy0DxB5E9p8hMNd1ADKlgVadwq0X9uat-M2-Pk4gvojoR5RMvitOK7xWXlE-8f1QPSgvrt5NN8hWZa7bqeIk2_xJemoJrIkRl4cyguLGF_FgZDKKCN6bAS7KCcTnTsADKvo-l8tbSbkKI4lRBrPYD5V0R28icwWBn')">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-black/30"></div>
+<!-- Live Overlay Pill in PIP -->
+<div class="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-container/90 text-on-secondary-container text-label-tech font-label-tech text-[10px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+            FEED AO VIVO
+          </div>
+<!-- Audio Wave Indicator -->
+<div class="absolute top-2 right-2 flex items-center gap-0.5 bg-black/60 px-2 py-1 rounded">
+<span class="w-0.5 h-2.5 bg-tertiary animate-bounce"></span>
+<span class="w-0.5 h-3.5 bg-tertiary animate-bounce" style="animation-delay: 0.15s"></span>
+<span class="w-0.5 h-2 bg-tertiary animate-bounce" style="animation-delay: 0.3s"></span>
+</div>
+<!-- Bottom Time & Match Scoreboard Pill inside PIP -->
+<div class="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
+<div class="flex justify-between items-center text-[11px] font-label-tech text-white px-1">
+<span>FLA 2 × 1 PAL</span>
+<span class="text-tertiary font-bold">68'</span>
+</div>
+<!-- Progress Bar of 120min match -->
+<div class="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 72%;"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. FULL EPG MATRIX GRID (Channels Column + Horizontal Synchronized Timeline) -->
+<div class="flex-1 flex flex-col min-h-0 bg-surface-container-lowest/80 rounded-2xl border border-outline-variant/30 overflow-hidden relative shadow-2xl">
+<!-- TIMELINE HEADER ROW -->
+<div class="flex items-center h-11 border-b border-outline-variant/30 bg-surface-container-high/60 shrink-0">
+<!-- Corner Label for Channels -->
+<div class="w-64 px-4 flex items-center justify-between border-r border-outline-variant/30 shrink-0 h-full">
+<span class="text-label-lg font-label-lg font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="live_tv">live_tv</span>
+            CANAIS (6)
+          </span>
+<span class="text-label-tech font-label-tech text-xs text-outline">HORÁRIO DE BRASÍLIA</span>
+</div>
+<!-- Horizontal Time Scale Slots (Proportional Widths) -->
+<div class="flex-1 flex items-center h-full relative overflow-hidden font-label-tech text-label-tech text-xs text-on-surface-variant">
+<!-- Time block: 15:00 - 15:30 -->
+<div class="w-1/5 px-3 border-r border-outline-variant/20 h-full flex items-center">
+            15:00 - 15:30
+          </div>
+<!-- Time block: 15:30 - 16:00 (Includes live playhead indicator 'AGORA - 15:46') -->
+<div class="w-1/5 px-3 border-r border-outline-variant/20 h-full flex items-center justify-between relative bg-surface-container/30">
+<span>15:30</span>
+<span class="text-outline">16:00</span>
+</div>
+<!-- Time block: 16:00 - 16:30 -->
+<div class="w-1/5 px-3 border-r border-outline-variant/20 h-full flex items-center">
+            16:00 - 16:30
+          </div>
+<!-- Time block: 16:30 - 17:00 -->
+<div class="w-1/5 px-3 border-r border-outline-variant/20 h-full flex items-center">
+            16:30 - 17:00
+          </div>
+<!-- Time block: 17:00 - 17:30 -->
+<div class="w-1/5 px-3 border-r border-outline-variant/20 h-full flex items-center">
+            17:00 - 17:30
+          </div>
+<!-- VERTICAL LIVE PLAYHEAD LINE (15:46 is at ~53% into the 15:00-17:30 scale) -->
+<div class="absolute top-0 bottom-0 left-[34%] z-40 flex flex-col items-center pointer-events-none">
+<div class="bg-secondary-container text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg flex items-center gap-1 shadow-secondary-container/50">
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+              AGORA · 15:46
+            </div>
+<div class="w-[2px] h-full bg-secondary-container shadow-[0_0_8px_#ff2a6d]"></div>
+</div>
+</div>
+</div>
+<!-- CHANNEL ROWS (Scrollable Container in 10-ft experience) -->
+<div class="flex-1 flex flex-col overflow-y-auto divide-y divide-outline-variant/20">
+<!-- ================= ROW 1: Channel 041 - SportTV 4K ================= -->
+<div class="flex items-center h-[54px] hover:bg-surface-container-high/40 transition-colors group">
+<!-- Channel Column Header -->
+<div class="w-64 px-4 flex items-center justify-between border-r border-outline-variant/30 h-full shrink-0 bg-surface-container-low/50">
+<div class="flex items-center gap-2">
+<span class="w-8 text-label-tech font-label-tech text-xs text-outline font-bold">041</span>
+<span class="font-headline-sm text-sm font-bold text-on-surface">SportTV 4K</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-sm" data-icon="star">star</span>
+</div>
+<!-- Slots Container -->
+<div class="flex-1 flex items-center h-full relative">
+<!-- [14:30 - 16:00] Circuito Mundial de Surfe - Heat 4 (Ao Vivo) (Width 40%) -->
+<div class="w-[40%] h-full p-1.5">
+<div class="h-full bg-surface-container rounded-lg border border-outline-variant/30 px-3 flex items-center justify-between hover:border-primary/50 transition-all">
+<div class="truncate">
+<span class="text-xs font-label-tech text-tertiary mr-1 font-bold">AO VIVO</span>
+<span class="text-body-md font-body-md text-sm text-on-surface font-medium">Circuito Mundial de Surfe - Heat 4</span>
+</div>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">14:30 - 16:00</span>
+</div>
+</div>
+<!-- [16:00 - 17:30] Taça Libertadores: Melhores Momentos (Width 60%) -->
+<div class="w-[60%] h-full p-1.5">
+<div class="h-full bg-surface-container-low rounded-lg border border-outline-variant/20 px-3 flex items-center justify-between hover:border-outline transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface-variant truncate">Taça Libertadores: Melhores Momentos</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">16:00 - 17:30</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= ROW 2: Channel 042 - PREMIERE HD (ACTIVE FOCUSED ROW & CELL) ================= -->
+<div class="flex items-center h-[62px] bg-primary-container/10 border-l-4 border-primary transition-all relative">
+<!-- Channel Column Header (Active Focus) -->
+<div class="w-64 px-4 flex items-center justify-between border-r border-primary/40 h-full shrink-0 bg-surface-container-high">
+<div class="flex items-center gap-2">
+<span class="w-8 text-label-tech font-label-tech text-xs text-primary font-bold">042</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-sm font-bold text-primary">PREMIERE HD</span>
+<span class="text-[10px] font-label-tech text-tertiary">CANAL SINTONIZADO</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="star" data-weight="fill" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<!-- Slots Container -->
+<div class="flex-1 flex items-center h-full relative">
+<!-- [15:00 - 17:00] Final da Supercopa 2025: FLA x PAL (FOCUSED 10-ft CELL with Electric Ring) -->
+<div class="w-[80%] h-full p-1">
+<div class="h-full bg-surface-container-high rounded-xl border-2 border-primary-container shadow-[0_0_24px_rgba(0,210,255,0.45)] px-4 flex items-center justify-between transform scale-[1.01] z-20 relative">
+<div class="flex items-center gap-2 truncate">
+<span class="px-2 py-0.5 rounded bg-secondary-container text-white font-label-tech text-[10px] font-bold shrink-0 animate-pulse">NO AR</span>
+<span class="font-headline-sm text-body-lg text-sm font-bold text-white tracking-wide truncate">
+                    Final da Supercopa 2025: Flamengo vs Palmeiras
+                  </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-primary text-[10px] font-label-tech shrink-0">4K HDR</span>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<div class="w-24 h-1.5 bg-surface-variant rounded-full overflow-hidden hidden md:block">
+<div class="h-full bg-primary-container" style="width: 72%;"></div>
+</div>
+<span class="text-label-tech font-label-tech text-xs text-primary font-bold">15:00 - 17:00</span>
+</div>
+</div>
+</div>
+<!-- [17:00 - 18:30] Mesa Redonda Pós-Jogo (Width 20%) -->
+<div class="w-[20%] h-full p-1.5 opacity-80">
+<div class="h-full bg-surface-container-low rounded-lg border border-outline-variant/20 px-3 flex items-center justify-between hover:border-outline transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface-variant truncate">Mesa Redonda Pós-Jogo</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-1">17:00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= ROW 3: Channel 043 - ESPN 1 Brasil ================= -->
+<div class="flex items-center h-[54px] hover:bg-surface-container-high/40 transition-colors group">
+<div class="w-64 px-4 flex items-center justify-between border-r border-outline-variant/30 h-full shrink-0 bg-surface-container-low/50">
+<div class="flex items-center gap-2">
+<span class="w-8 text-label-tech font-label-tech text-xs text-outline font-bold">043</span>
+<span class="font-headline-sm text-sm font-bold text-on-surface">ESPN 1 Brasil</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-sm" data-icon="star">star</span>
+</div>
+<div class="flex-1 flex items-center h-full relative">
+<!-- [15:30 - 17:30] Premier League: Arsenal vs Chelsea (Ao Vivo) (Width 80%) -->
+<div class="w-[80%] h-full p-1.5">
+<div class="h-full bg-surface-container rounded-lg border border-outline-variant/30 px-3 flex items-center justify-between hover:border-primary/50 transition-all">
+<div class="truncate">
+<span class="text-xs font-label-tech text-secondary-container mr-1 font-bold">AO VIVO</span>
+<span class="text-body-md font-body-md text-sm text-on-surface font-medium">Premier League: Arsenal vs Chelsea</span>
+</div>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">15:30 - 17:30</span>
+</div>
+</div>
+<!-- [17:30 - 19:00] SportsCenter Brasil Especial (Width 20%) -->
+<div class="w-[20%] h-full p-1.5">
+<div class="h-full bg-surface-container-low rounded-lg border border-outline-variant/20 px-3 flex items-center justify-between hover:border-outline transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface-variant truncate">SportsCenter Brasil</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-1">17:30</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= ROW 4: Channel 044 - BandSports ================= -->
+<div class="flex items-center h-[54px] hover:bg-surface-container-high/40 transition-colors group">
+<div class="w-64 px-4 flex items-center justify-between border-r border-outline-variant/30 h-full shrink-0 bg-surface-container-low/50">
+<div class="flex items-center gap-2">
+<span class="w-8 text-label-tech font-label-tech text-xs text-outline font-bold">044</span>
+<span class="font-headline-sm text-sm font-bold text-on-surface">BandSports</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-sm" data-icon="star">star</span>
+</div>
+<div class="flex-1 flex items-center h-full relative">
+<!-- [15:00 - 16:30] Treinos Oficiais GP da Austrália F1 (Width 60%) -->
+<div class="w-[60%] h-full p-1.5">
+<div class="h-full bg-surface-container rounded-lg border border-outline-variant/30 px-3 flex items-center justify-between hover:border-primary/50 transition-all">
+<div class="truncate">
+<span class="text-body-md font-body-md text-sm text-on-surface font-medium">Treinos Oficiais GP da Austrália F1</span>
+</div>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">15:00 - 16:30</span>
+</div>
+</div>
+<!-- [16:30 - 18:00] Ace no Tênis: ATP 1000 (Width 40%) -->
+<div class="w-[40%] h-full p-1.5">
+<div class="h-full bg-surface-container-low rounded-lg border border-outline-variant/20 px-3 flex items-center justify-between hover:border-outline transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface-variant truncate">Ace no Tênis: ATP 1000</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">16:30 - 18:00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= ROW 5: Channel 045 - CazéTV 4K ================= -->
+<div class="flex items-center h-[54px] hover:bg-surface-container-high/40 transition-colors group">
+<div class="w-64 px-4 flex items-center justify-between border-r border-outline-variant/30 h-full shrink-0 bg-surface-container-low/50">
+<div class="flex items-center gap-2">
+<span class="w-8 text-label-tech font-label-tech text-xs text-outline font-bold">045</span>
+<span class="font-headline-sm text-sm font-bold text-on-surface">CazéTV 4K</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-sm" data-icon="star">star</span>
+</div>
+<div class="flex-1 flex items-center h-full relative">
+<!-- [15:15 - 17:15] Bundesliga: Bayern vs Dortmund (Width 80%) -->
+<div class="w-[80%] h-full p-1.5">
+<div class="h-full bg-surface-container rounded-lg border border-outline-variant/30 px-3 flex items-center justify-between hover:border-primary/50 transition-all">
+<div class="truncate">
+<span class="text-xs font-label-tech text-tertiary mr-1 font-bold">4K TRANSMISSÃO</span>
+<span class="text-body-md font-body-md text-sm text-on-surface font-medium">Bundesliga: Bayern vs Dortmund</span>
+</div>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">15:15 - 17:15</span>
+</div>
+</div>
+<!-- [17:15 - 19:00] Reação dos Gols da Rodada (Width 20%) -->
+<div class="w-[20%] h-full p-1.5">
+<div class="h-full bg-surface-container-low rounded-lg border border-outline-variant/20 px-3 flex items-center justify-between hover:border-outline transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface-variant truncate">Reação dos Gols</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-1">17:15</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= ROW 6: Channel 046 - Conmebol TV ================= -->
+<div class="flex items-center h-[54px] hover:bg-surface-container-high/40 transition-colors group">
+<div class="w-64 px-4 flex items-center justify-between border-r border-outline-variant/30 h-full shrink-0 bg-surface-container-low/50">
+<div class="flex items-center gap-2">
+<span class="w-8 text-label-tech font-label-tech text-xs text-outline font-bold">046</span>
+<span class="font-headline-sm text-sm font-bold text-on-surface">Conmebol TV</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-sm" data-icon="star">star</span>
+</div>
+<div class="flex-1 flex items-center h-full relative">
+<!-- [15:00 - 16:45] Compacto Semifinal Libertadores (Width 70%) -->
+<div class="w-[70%] h-full p-1.5">
+<div class="h-full bg-surface-container rounded-lg border border-outline-variant/30 px-3 flex items-center justify-between hover:border-primary/50 transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface font-medium truncate">Compacto Semifinal Libertadores</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">15:00 - 16:45</span>
+</div>
+</div>
+<!-- [16:45 - 18:30] Pré-Jogo Especial (Width 30%) -->
+<div class="w-[30%] h-full p-1.5">
+<div class="h-full bg-surface-container-low rounded-lg border border-outline-variant/20 px-3 flex items-center justify-between hover:border-outline transition-all">
+<span class="text-body-md font-body-md text-sm text-on-surface-variant truncate">Pré-Jogo Especial</span>
+<span class="text-label-tech font-label-tech text-[11px] text-outline shrink-0 ml-2">16:45 - 18:30</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- ================= REMOTE CONTROL FOOTER BAR (webOS Color Keys & Legend) ================= -->
+<footer class="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl border-t border-outline-variant/20 px-margin py-2.5 flex items-center justify-between shadow-2xl">
+<!-- webOS 4-Color Hardware Shortcut Buttons -->
+<div class="flex items-center gap-space-lg text-label-shortcut font-label-shortcut text-xs">
+<!-- Red Button -->
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#ff3b30] shadow-[0_0_8px_#ff3b30]"></span>
+<span class="text-on-surface">Agendar / Gravar</span>
+</div>
+<!-- Green Button -->
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#05ffa1] shadow-[0_0_8px_#05ffa1]"></span>
+<span class="text-on-surface">Filtrar Categoria</span>
+</div>
+<!-- Yellow Button -->
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#ffcc00] shadow-[0_0_8px_#ffcc00]"></span>
+<span class="text-on-surface">Pular +24 Horas</span>
+</div>
+<!-- Blue Button -->
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#00d2ff] shadow-[0_0_8px_#00d2ff]"></span>
+<span class="text-on-surface">Sintonizar Canal em Tela Cheia</span>
+</div>
+</div>
+<!-- D-Pad Hardware / Pointer Navigation Guide -->
+<div class="flex items-center gap-space-md text-label-tech font-label-tech text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-on-surface font-bold">▲▼◄►</span>
+        Navegar Grade
+      </span>
+<span class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-primary-container text-on-primary-container font-extrabold">OK</span>
+        Assistir
+      </span>
+<span class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-on-surface font-bold">INFO</span>
+        Sinopse Detalhada
+      </span>
+<span class="flex items-center gap-1 text-outline">
+<span class="material-symbols-outlined text-sm" data-icon="mouse">mouse</span>
+        Magic Remote Ativo
+      </span>
+</div>
+</footer>
+<!-- Subtle Micro-Interactions Script for 10-ft TV Demo -->
+<script>
+    document.addEventListener('keydown', (e) => {
+      // Simulate remote D-Pad navigation feel
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body></html>

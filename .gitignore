@@ -12,6 +12,7 @@ data/
 uploads/
 *.m3u
 *.m3u8
+*.xml
 link_lista.txt
 *.local.*
 
