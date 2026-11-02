@@ -74,36 +74,40 @@
       </div>
       <!-- Diagnostic Node Pill -->
       <div class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/30 text-xs font-label-tech">
-        <span class="material-symbols-outlined text-primary text-[18px]">dns</span>
-        <span class="text-on-surface">Servidor Local:</span>
-        <span id="header-server-ip" class="text-primary-container font-semibold">192.168.18.7:3001</span>
+        <span class="material-symbols-outlined text-primary text-[18px]">cloud</span>
+        <span class="text-on-surface">Origem:</span>
+        <span id="header-server-ip" class="text-primary-container font-semibold">Supabase Cloud</span>
         <span class="text-outline">·</span>
-        <span id="header-ping" class="text-tertiary font-bold">1.2ms</span>
+        <span id="header-ping" class="text-tertiary font-bold">Ativo</span>
         <span class="text-outline">·</span>
         <span class="text-on-surface-variant flex items-center gap-1">
           <span class="material-symbols-outlined text-tertiary text-[16px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
-          Anti-SSRF Ativo
+          Seguro
         </span>
       </div>
     </div>
 
     <!-- Navigation Tabs Cluster -->
     <nav class="flex items-center gap-7">
-      <button id="nav-btn-player" class="nav-tab-btn text-on-surface-variant hover:text-primary font-medium text-base transition-colors pb-1 flex items-center gap-1.5 focusable rounded-lg px-2" onclick="switchToView('player')">
-        <span class="material-symbols-outlined text-[18px]">live_tv</span>
-        TV Ao Vivo
+      <button id="nav-btn-hub" class="nav-tab-btn text-primary border-b-2 border-primary font-bold text-base pb-1 flex items-center gap-1.5 shadow-[0_4px_12px_rgba(0,210,255,0.25)] focusable rounded-lg px-2" onclick="switchToView('hub')">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">home</span>
+        Início (Hub)
       </button>
-      <button id="nav-btn-catalog" class="nav-tab-btn text-primary border-b-2 border-primary font-bold text-base pb-1 flex items-center gap-1.5 shadow-[0_4px_12px_rgba(0,210,255,0.25)] focusable rounded-lg px-2" onclick="switchToView('catalog')">
-        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
-        Catálogo de Canais
+      <button id="nav-btn-catalog" class="nav-tab-btn text-on-surface-variant hover:text-primary font-medium text-base transition-colors pb-1 flex items-center gap-1.5 focusable rounded-lg px-2" onclick="switchToView('catalog')">
+        <span id="nav-catalog-icon" class="material-symbols-outlined text-[18px]">live_tv</span>
+        <span id="nav-catalog-label">Catálogo</span>
+      </button>
+      <button id="nav-btn-player" class="nav-tab-btn text-on-surface-variant hover:text-primary font-medium text-base transition-colors pb-1 flex items-center gap-1.5 focusable rounded-lg px-2" onclick="switchToView('player')">
+        <span class="material-symbols-outlined text-[18px]">play_circle</span>
+        Player
       </button>
       <button id="nav-btn-epg" class="nav-tab-btn text-on-surface-variant hover:text-primary font-medium text-base transition-colors pb-1 flex items-center gap-1.5 focusable rounded-lg px-2" onclick="switchToView('epg')">
         <span class="material-symbols-outlined text-[18px]">calendar_month</span>
         Guia EPG
       </button>
       <button id="nav-btn-server" class="nav-tab-btn text-on-surface-variant hover:text-primary font-medium text-base transition-colors pb-1 flex items-center gap-1.5 focusable rounded-lg px-2" onclick="switchToView('server')">
-        <span class="material-symbols-outlined text-[18px]">settings</span>
-        Servidor Local
+        <span class="material-symbols-outlined text-[18px]">tune</span>
+        Ajustes
       </button>
     </nav>
 
@@ -116,8 +120,110 @@
     </div>
   </header>
 
+  <!-- ================= VIEW 0: HOME HUB (4 CARDS) ================= -->
+  <div id="view-hub" class="flex-1 flex flex-col justify-center items-center w-full h-full px-16 pt-[70px] pb-[44px]">
+    <!-- Welcome Header / Hero -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-label-tech mb-3">
+        <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+        STREAMOS HUB • NAVEGAÇÃO 10-FOOT TV
+      </div>
+      <h1 class="text-4xl font-headline-md font-bold text-white tracking-wide mb-2">Central de Entretenimento</h1>
+      <p class="text-sm font-body-md text-on-surface-variant max-w-xl mx-auto">
+        Selecione a categoria desejada no controle remoto e pressione <span class="text-primary font-semibold">OK</span>.
+      </p>
+    </div>
+
+    <!-- 4 Cards Grid -->
+    <div class="grid grid-cols-4 gap-6 w-full max-w-6xl">
+      <!-- Card 1: TV Online (Live) -->
+      <div id="hub-card-live" class="hub-card focusable group relative overflow-hidden rounded-3xl p-7 bg-surface-container-low border-2 border-outline-variant/30 hover:border-primary flex flex-col justify-between h-[320px] cursor-pointer" onclick="selectHubMode('live')">
+        <div class="flex items-center justify-between">
+          <div class="hub-icon-box w-16 h-16 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 transition-transform">
+            <span class="material-symbols-outlined text-4xl">live_tv</span>
+          </div>
+          <span id="hub-count-live" class="text-xs font-label-tech bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full border border-cyan-500/30 font-bold">... canais</span>
+        </div>
+        <div>
+          <span class="text-xs font-label-tech text-cyan-400 uppercase tracking-widest block mb-1">Transmissão Direta</span>
+          <h2 class="text-2xl font-headline-sm font-bold text-white group-focus:text-cyan-300 transition-colors">TV Online</h2>
+          <p class="text-xs font-body-md text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">
+            Canais ao vivo, esportes e notícias em tempo real com reprodução contínua.
+          </p>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-outline-variant/20 text-xs font-label-tech text-on-surface-variant">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Ao Vivo</span>
+          <span class="text-primary group-focus:translate-x-1 transition-transform font-bold">Sintonizar ▶</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Filmes (Movies) -->
+      <div id="hub-card-movies" class="hub-card focusable group relative overflow-hidden rounded-3xl p-7 bg-surface-container-low border-2 border-outline-variant/30 hover:border-purple-400 flex flex-col justify-between h-[320px] cursor-pointer" onclick="selectHubMode('movies')">
+        <div class="flex items-center justify-between">
+          <div class="hub-icon-box w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 transition-transform">
+            <span class="material-symbols-outlined text-4xl">movie</span>
+          </div>
+          <span id="hub-count-movies" class="text-xs font-label-tech bg-purple-500/10 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30 font-bold">... filmes</span>
+        </div>
+        <div>
+          <span class="text-xs font-label-tech text-purple-400 uppercase tracking-widest block mb-1">Catálogo VOD</span>
+          <h2 class="text-2xl font-headline-sm font-bold text-white group-focus:text-purple-300 transition-colors">Filmes</h2>
+          <p class="text-xs font-body-md text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">
+            Longas-metragens, lançamentos e clássicos organizados por gênero.
+          </p>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-outline-variant/20 text-xs font-label-tech text-on-surface-variant">
+          <span class="flex items-center gap-1.5">🎬 Cinema VOD</span>
+          <span class="text-purple-400 group-focus:translate-x-1 transition-transform font-bold">Explorar ▶</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Séries (Series) -->
+      <div id="hub-card-series" class="hub-card focusable group relative overflow-hidden rounded-3xl p-7 bg-surface-container-low border-2 border-outline-variant/30 hover:border-amber-400 flex flex-col justify-between h-[320px] cursor-pointer" onclick="selectHubMode('series')">
+        <div class="flex items-center justify-between">
+          <div class="hub-icon-box w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 transition-transform">
+            <span class="material-symbols-outlined text-4xl">video_library</span>
+          </div>
+          <span id="hub-count-series" class="text-xs font-label-tech bg-amber-500/10 text-amber-300 px-3 py-1 rounded-full border border-amber-500/30 font-bold">... séries</span>
+        </div>
+        <div>
+          <span class="text-xs font-label-tech text-amber-400 uppercase tracking-widest block mb-1">Temporadas VOD</span>
+          <h2 class="text-2xl font-headline-sm font-bold text-white group-focus:text-amber-300 transition-colors">Séries</h2>
+          <p class="text-xs font-body-md text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">
+            Episódios e temporadas completas organizados para maratonar.
+          </p>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-outline-variant/20 text-xs font-label-tech text-on-surface-variant">
+          <span class="flex items-center gap-1.5">🍿 Maratonar</span>
+          <span class="text-amber-400 group-focus:translate-x-1 transition-transform font-bold">Assistir ▶</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Favoritos & Ajustes -->
+      <div id="hub-card-favorites" class="hub-card focusable group relative overflow-hidden rounded-3xl p-7 bg-surface-container-low border-2 border-outline-variant/30 hover:border-emerald-400 flex flex-col justify-between h-[320px] cursor-pointer" onclick="selectHubMode('favorites')">
+        <div class="flex items-center justify-between">
+          <div class="hub-icon-box w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 transition-transform">
+            <span class="material-symbols-outlined text-4xl">star</span>
+          </div>
+          <span id="hub-count-favorites" class="text-xs font-label-tech bg-emerald-500/10 text-emerald-300 px-3 py-1 rounded-full border border-emerald-500/30 font-bold">... salvos</span>
+        </div>
+        <div>
+          <span class="text-xs font-label-tech text-emerald-400 uppercase tracking-widest block mb-1">Acesso Rápido</span>
+          <h2 class="text-2xl font-headline-sm font-bold text-white group-focus:text-emerald-300 transition-colors">Favoritos</h2>
+          <p class="text-xs font-body-md text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">
+            Seus canais, filmes e séries marcados para acesso imediato e sem demora.
+          </p>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-outline-variant/20 text-xs font-label-tech text-on-surface-variant">
+          <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm text-tertiary">cloud_done</span> Supabase</span>
+          <span class="text-emerald-400 group-focus:translate-x-1 transition-transform font-bold">Ver Todos ▶</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= VIEW 1: CATALOG & PIP INSPECTOR ================= -->
-  <div id="view-catalog" class="flex-1 flex flex-col overflow-hidden w-full h-full pt-[70px] pb-[44px]">
+  <div id="view-catalog" class="flex-1 flex flex-col overflow-hidden w-full h-full pt-[70px] pb-[44px] hidden">
     <!-- Category Rail Carousel -->
     <section class="px-14 py-2 z-30 bg-surface-container-lowest/60 backdrop-blur-sm border-b border-outline-variant/20">
       <div class="flex items-center justify-between gap-4">
@@ -400,6 +506,7 @@
   </footer>
 
   <!-- Scripts -->
+  <script src="js/config.js"></script>
   <script src="js/hls.min.js"></script>
   <script src="js/app.js"></script>
 </body>

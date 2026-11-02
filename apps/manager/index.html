@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPTV Local - Painel de Controle</title>
-  <link rel="icon" type="image/png" href="/logo-ui.png">
+  <title>IPTV Cloud & Local Manager</title>
+  <link rel="icon" type="image/png" href="logo-ui.png">
   <style>
     :root {
       --bg: #0b0f19;
@@ -17,6 +17,8 @@
       --accent: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --purple: #a855f7;
+      --amber: #f59e0b;
       --radius: 12px;
     }
     * {
@@ -144,6 +146,12 @@
       border-radius: var(--radius);
       padding: 1.25rem;
       text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
     }
     .stat-val {
       font-size: 2rem;
@@ -155,6 +163,80 @@
       font-size: 0.85rem;
       color: var(--text-muted);
     }
+
+    /* Category Selector Grid */
+    .category-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .category-picker-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .category-pick-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 2px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .category-pick-card:hover {
+      border-color: rgba(56, 189, 248, 0.5);
+      background: rgba(56, 189, 248, 0.04);
+    }
+    .category-pick-card.active {
+      border-color: var(--primary);
+      background: rgba(56, 189, 248, 0.12);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+    }
+    .category-pick-icon {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .category-pick-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .category-pick-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Type Filter Chips */
+    .filter-chips {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .chip {
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover {
+      color: var(--text);
+      border-color: var(--primary);
+    }
+    .chip.active {
+      background: var(--primary);
+      color: #0b0f19;
+      border-color: var(--primary);
+    }
+
     .form-group {
       margin-bottom: 1rem;
     }
@@ -186,10 +268,13 @@
       font-size: 0.95rem;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:active {
+      transform: scale(0.98);
     }
     .btn-primary {
       background: var(--primary);
@@ -199,11 +284,6 @@
       background: var(--primary-hover);
     }
     .btn-danger {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--danger);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-    }
-    .btn-danger:hover {
       background: var(--danger);
       color: white;
     }
@@ -214,116 +294,99 @@
     }
     .btn-outline:hover {
       background: rgba(255, 255, 255, 0.05);
+      border-color: var(--text-muted);
     }
     .channel-list {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      max-height: 600px;
-      overflow-y: auto;
-      padding-right: 0.5rem;
     }
     .channel-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0.75rem 1rem;
-      background: rgba(255, 255, 255, 0.02);
+      background: #0b0f19;
       border: 1px solid var(--card-border);
       border-radius: 8px;
       gap: 1rem;
+      transition: border-color 0.15s;
+    }
+    .channel-item:hover {
+      border-color: rgba(56, 189, 248, 0.4);
     }
     .channel-item.hidden-chan {
-      opacity: 0.5;
-      text-decoration: line-through;
+      opacity: 0.45;
     }
     .channel-info {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      flex: 1;
       min-width: 0;
     }
     .channel-logo {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 6px;
+      object-fit: cover;
       background: #1e293b;
-      object-fit: contain;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.75rem;
+      font-weight: 700;
       color: var(--text-muted);
+      shrink-0;
     }
     .channel-name {
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 380px;
     }
     .channel-group-tag {
       font-size: 0.75rem;
       color: var(--text-muted);
+      margin-top: 0.15rem;
     }
+    .type-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .type-live { background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .type-movies { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .type-series { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+
     .channel-actions {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
+      shrink-0;
     }
     .icon-btn {
       background: transparent;
-      border: none;
+      border: 1px solid var(--card-border);
       color: var(--text-muted);
-      cursor: pointer;
-      font-size: 1.1rem;
-      padding: 0.4rem;
       border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
     }
     .icon-btn:hover {
       color: var(--text);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--text-muted);
     }
     .icon-btn.active-fav {
       color: var(--warning);
-    }
-    .pin-display {
-      text-align: center;
-      padding: 2.5rem 1rem;
-    }
-    .pin-box {
-      font-size: 3.5rem;
-      font-weight: 800;
-      letter-spacing: 0.5rem;
-      color: var(--accent);
-      background: rgba(16, 185, 129, 0.1);
-      border: 2px dashed rgba(16, 185, 129, 0.4);
-      border-radius: 16px;
-      display: inline-block;
-      padding: 1rem 2rem;
-      margin: 1.5rem 0;
-      font-family: monospace;
-    }
-    .pin-timer {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-    }
-    .device-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    .device-table th, .device-table td {
-      padding: 0.75rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--card-border);
-    }
-    .device-table th {
-      color: var(--text-muted);
-      font-size: 0.85rem;
+      border-color: var(--warning);
+      background: rgba(245, 158, 11, 0.1);
     }
     .alert {
       padding: 1rem;
@@ -333,76 +396,109 @@
     }
     .alert-info {
       background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      border: 1px solid rgba(56, 189, 248, 0.2);
       color: var(--primary);
     }
-    .alert-error {
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: var(--accent);
+    }
+    .alert-danger {
       background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.2);
       color: var(--danger);
+    }
+    .progress-bar-container {
+      width: 100%;
+      height: 10px;
+      background: #0b0f19;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 1rem 0;
+      border: 1px solid var(--card-border);
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 0.2s;
     }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">
-      <img src="/logo-ui.png" alt="IPTV Local Logo" class="brand-logo-img">
+      <img src="logo-ui.png" alt="IPTV Logo" class="brand-logo-img">
       <div>
-        <div class="brand-title">IPTV Local Manager</div>
-        <div style="font-size: 0.75rem; color: var(--text-muted);">Serviço Doméstico Privado</div>
+        <div class="brand-title">IPTV Cloud & Local Manager</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Sincronização Nuvem (Supabase) & TV LG webOS</div>
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <span id="server-status-badge" class="badge badge-offline">Verificando...</span>
-      <span id="server-host-label" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+      <span id="supabase-status-badge" class="badge badge-offline">Supabase Conectando...</span>
+      <span id="supabase-host-label" style="font-size: 0.8rem; color: var(--text-muted);"></span>
     </div>
   </header>
 
   <nav>
-    <button class="nav-btn active" onclick="switchTab('channels')">📺 Canais & Grupos</button>
+    <button class="nav-btn active" onclick="switchTab('channels')">📺 Canais & Conteúdo</button>
     <button class="nav-btn" onclick="switchTab('upload')">📥 Importar Playlist (M3U)</button>
-    <button class="nav-btn" onclick="switchTab('pairing')">🔗 Parear TV LG</button>
-    <button class="nav-btn" onclick="switchTab('epg')">📅 Guia EPG (XMLTV)</button>
+    <button class="nav-btn" onclick="switchTab('deploy')">⚡ Deploy & Supabase</button>
+    <button class="nav-btn" onclick="switchTab('pairing')">🔗 Parear TV Local</button>
   </nav>
 
   <main>
     <!-- TAB: CANAIS -->
     <div id="tab-channels" class="tab-content active">
       <div class="grid-stats">
-        <div class="stat-card">
-          <div class="stat-lbl">Total de Canais</div>
+        <div class="stat-card" onclick="filterByType('')">
+          <div class="stat-lbl">Total de Itens</div>
           <div class="stat-val" id="stat-total-channels">0</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-lbl">Canais Ativos</div>
-          <div class="stat-val" id="stat-active-channels">0</div>
+        <div class="stat-card" onclick="filterByType('live')">
+          <div class="stat-lbl">📺 TV Ao Vivo</div>
+          <div class="stat-val" id="stat-live-channels" style="color: var(--primary);">0</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-lbl">Categorias</div>
-          <div class="stat-val" id="stat-total-groups">0</div>
+        <div class="stat-card" onclick="filterByType('movies')">
+          <div class="stat-lbl">🎬 Filmes</div>
+          <div class="stat-val" id="stat-movies-channels" style="color: var(--purple);">0</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-lbl">Favoritos</div>
+        <div class="stat-card" onclick="filterByType('series')">
+          <div class="stat-lbl">🍿 Séries</div>
+          <div class="stat-val" id="stat-series-channels" style="color: var(--amber);">0</div>
+        </div>
+        <div class="stat-card" onclick="toggleFavFilter()">
+          <div class="stat-lbl">⭐ Favoritos</div>
           <div class="stat-val" id="stat-fav-channels" style="color: var(--warning);">0</div>
         </div>
       </div>
 
       <div class="card">
+        <!-- Type Filter Chips -->
+        <div class="filter-chips">
+          <button class="chip active" data-type="" onclick="filterByType('')">Todos os Tipos</button>
+          <button class="chip" data-type="live" onclick="filterByType('live')">📺 TV Online (Ao Vivo)</button>
+          <button class="chip" data-type="movies" onclick="filterByType('movies')">🎬 Filmes</button>
+          <button class="chip" data-type="series" onclick="filterByType('series')">🍿 Séries</button>
+        </div>
+
         <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
-          <input type="text" id="search-input" placeholder="🔍 Buscar canal por nome..." style="flex: 2; min-width: 200px;" oninput="filterChannels()">
-          <select id="group-select" style="flex: 1; min-width: 150px;" onchange="filterChannels()">
+          <input type="text" id="search-input" placeholder="🔍 Buscar por nome..." style="flex: 2; min-width: 200px;" oninput="onSearchInput()">
+          <select id="group-select" style="flex: 1; min-width: 150px;" onchange="onGroupSelect()">
             <option value="">Todas as Categorias</option>
           </select>
           <button class="btn btn-outline" id="fav-toggle-btn" onclick="toggleFavFilter()">⭐ Apenas Favoritos</button>
+          <button class="btn btn-outline" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="clearCurrentCategory()">🗑️ Limpar Categoria</button>
         </div>
 
         <div id="channels-container" class="channel-list">
-          <div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal carregado. Importe uma playlist na aba M3U.</div>
+          <div style="text-align: center; padding: 2rem; color: var(--text-muted);">Carregando conteúdos do Supabase...</div>
         </div>
 
         <div id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--card-border);">
           <button class="btn btn-outline" id="prev-page-btn" onclick="changePage(-1)" disabled>◀ Anterior</button>
-          <span id="page-info" style="font-size: 0.9rem; color: var(--text-muted);">Página 1 de 1 (0 canais)</span>
+          <span id="page-info" style="font-size: 0.9rem; color: var(--text-muted);">Página 1 de 1 (0 itens)</span>
           <button class="btn btn-outline" id="next-page-btn" onclick="changePage(1)" disabled>Próximo ▶</button>
         </div>
       </div>
@@ -411,480 +507,611 @@
     <!-- TAB: UPLOAD -->
     <div id="tab-upload" class="tab-content">
       <div class="card">
-        <div class="card-title">📁 Importar Arquivo M3U / M3U8 Local</div>
+        <div class="card-title">1. Escolha a Categoria de Conteúdo</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+          Selecione para onde os links importados serão direcionados. Assim você não fica dependente de o sistema adivinhar se o link é TV, filme ou série!
+        </p>
+
+        <!-- Visual 3-Card Category Selector -->
+        <div class="category-picker-grid">
+          <div class="category-pick-card active" data-type="live" onclick="selectImportType('live')">
+            <span class="category-pick-icon">📺</span>
+            <div class="category-pick-title" style="color: var(--primary);">TV Online (Ao Vivo)</div>
+            <div class="category-pick-desc">Canais lineares ao vivo, esportes, notícias e transmissões HLS</div>
+          </div>
+          <div class="category-pick-card" data-type="movies" onclick="selectImportType('movies')">
+            <span class="category-pick-icon">🎬</span>
+            <div class="category-pick-title" style="color: var(--purple);">Filmes (VOD)</div>
+            <div class="category-pick-desc">Catálogo de longas-metragens e lançamentos para assistir sob demanda</div>
+          </div>
+          <div class="category-pick-card" data-type="series" onclick="selectImportType('series')">
+            <span class="category-pick-icon">🍿</span>
+            <div class="category-pick-title" style="color: var(--amber);">Séries (VOD)</div>
+            <div class="category-pick-desc">Temporadas e episódios de séries organizados para maratonar</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label>Modo de Importação:</label>
+          <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
+              <input type="radio" name="import-mode" value="replace" checked style="width: auto;">
+              <strong>Substituir Conteúdo</strong> (apaga os antigos da categoria escolhida e salva os novos)
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
+              <input type="radio" name="import-mode" value="append" style="width: auto;">
+              <strong>Mesclar / Adicionar</strong> (acrescenta aos existentes)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">2. Importar Arquivo M3U / M3U8</div>
         <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-          Selecione o arquivo da sua playlist autorizada no computador ou celular. A lista original será preservada integralmente e as personalizações serão salvas como sobreposição.
+          Selecione o arquivo da playlist (.m3u ou .m3u8). O processamento ocorre diretamente no seu navegador e os canais são salvos em lote no Supabase.
         </p>
         <div class="form-group">
           <input type="file" id="m3u-file-input" accept=".m3u,.m3u8,text/plain" style="padding: 0.5rem;">
         </div>
-        <button class="btn btn-primary" onclick="uploadM3UFile()">📤 Enviar Arquivo M3U</button>
+        <button class="btn btn-primary" id="btn-upload-file" onclick="uploadM3UFileToSupabase()">📤 Iniciar Importação para o Supabase</button>
+        <div id="upload-progress-container" style="display: none; margin-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+            <span id="upload-progress-label">Processando playlist...</span>
+            <span id="upload-progress-pct">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="upload-progress-fill"></div>
+          </div>
+        </div>
         <div id="upload-status" style="margin-top: 1rem;"></div>
       </div>
 
       <div class="card">
-        <div class="card-title">🌐 Importar por URL Remota (com Proteção SSRF)</div>
-        <div class="alert alert-info">
-          🛡️ <strong>Segurança Local:</strong> URLs inseridas passam por verificação prévia de DNS e bloqueio estrito de SSRF para faixas de rede privada e de metadados.
+        <div class="card-title">3. Ou Importar via URL Remota</div>
+        <div class="form-group">
+          <label>URL da Lista M3U:</label>
+          <input type="url" id="m3u-url-input" placeholder="https://provedor-autorizado.com/lista.m3u8">
+        </div>
+        <button class="btn btn-primary" onclick="importM3UUrlToSupabase()">🌐 Baixar e Enviar para o Supabase</button>
+        <div id="url-status" style="margin-top: 1rem;"></div>
+      </div>
+    </div>
+
+    <!-- TAB: DEPLOY & SUPABASE -->
+    <div id="tab-deploy" class="tab-content">
+      <div class="card">
+        <div class="card-title">⚡ Como Fazer Deploy do Painel Online (Grátis)</div>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem;">
+          Como este painel é 100% estático e se comunica diretamente com o seu Supabase, você pode hospedá-lo gratuitamente em serviços como <strong>Vercel</strong>, <strong>Cloudflare Pages</strong> ou <strong>Netlify</strong>:
+        </p>
+        <ol style="color: var(--text); padding-left: 1.5rem; line-height: 1.8; font-size: 0.95rem; margin-bottom: 1.5rem;">
+          <li><strong>Opção 1 (Vercel CLI):</strong> Abra o terminal na pasta do projeto e execute <code>vercel</code>. O arquivo <code>vercel.json</code> já está configurado!</li>
+          <li><strong>Opção 2 (GitHub):</strong> Suba o repositório para o seu GitHub e conecte o projeto na Vercel ou Cloudflare Pages apontando o diretório raiz para <code>apps/manager</code>.</li>
+          <li><strong>Acesso em qualquer lugar:</strong> Uma vez no ar (ex: <code>https://meu-iptv.vercel.app</code>), você gerencia suas listas de qualquer celular ou computador sem precisar ligar o PC de casa!</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Conexão Supabase</div>
+        <div class="form-group">
+          <label>URL do Projeto Supabase:</label>
+          <input type="text" id="cfg-supabase-url" placeholder="https://xyz.supabase.co">
         </div>
         <div class="form-group">
-          <label>URL da Playlist M3U/M3U8:</label>
-          <input type="url" id="m3u-url-input" placeholder="https://provedor-autorizado.com/minhalista.m3u8">
+          <label>Chave Pública Anon (Anon Key):</label>
+          <input type="password" id="cfg-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
         </div>
-        <button class="btn btn-primary" onclick="importM3UUrl()">Baixar e Importar Playlist</button>
-        <div id="url-status" style="margin-top: 1rem;"></div>
+        <div style="display: flex; gap: 1rem;">
+          <button class="btn btn-primary" onclick="saveSupabaseConfig()">💾 Salvar Configurações</button>
+          <button class="btn btn-outline" onclick="testSupabaseConnection()">🧪 Testar Conexão</button>
+        </div>
+        <div id="cfg-test-status" style="margin-top: 1rem;"></div>
       </div>
     </div>
 
     <!-- TAB: PAREAMENTO -->
     <div id="tab-pairing" class="tab-content">
       <div class="card">
-        <div class="card-title">🔗 Conectar TV LG webOS</div>
+        <div class="card-title">🔗 Conectar TV LG webOS ao Servidor Local</div>
         <p style="color: var(--text-muted); font-size: 0.9rem;">
-          Para autorizar a TV na rede local, gere um PIN de segurança de 6 dígitos. Na tela da TV, digite este código para validar a conexão imediata.
+          Se desejar utilizar o servidor local doméstico além do Supabase, gere o PIN de segurança para pareamento na TV:
         </p>
-
-        <div class="pin-display">
-          <div id="pin-container" style="display: none;">
+        <div style="margin-top: 1rem;">
+          <div id="pin-container" style="display: none; margin-bottom: 1rem;">
             <div style="font-size: 0.9rem; color: var(--text-muted);">Digite este PIN na TV:</div>
-            <div class="pin-box" id="pin-value">000000</div>
-            <div class="pin-timer" id="pin-timer">Expira em 5:00</div>
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); letter-spacing: 0.3em; margin: 0.5rem 0;" id="pin-value">000000</div>
+            <div style="font-size: 0.8rem; color: var(--warning);" id="pin-timer">Expira em 5:00</div>
           </div>
-          <button class="btn btn-primary" id="generate-pin-btn" onclick="generatePIN()">🔑 Gerar Novo PIN de Pareamento</button>
+          <button class="btn btn-primary" onclick="generatePIN()">🔑 Gerar Novo PIN</button>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">📺 TVs Pareadas na Rede Local</div>
-        <div id="devices-container">
-          <p style="color: var(--text-muted); font-size: 0.9rem;">Nenhuma TV pareada no momento.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB: EPG -->
-    <div id="tab-epg" class="tab-content">
-      <div class="card">
-        <div class="card-title">📅 Carregar Guia de Programação (XMLTV)</div>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-          O guia de programação (EPG) é opcional. Se tiver um arquivo XMLTV (.xml), você pode carregá-lo para exibir o que está passando agora em cada canal na TV.
-        </p>
-        <div class="form-group">
-          <input type="file" id="epg-file-input" accept=".xml,text/xml">
-        </div>
-        <button class="btn btn-primary" onclick="uploadEPGFile()">📤 Carregar Guia XMLTV</button>
-        <div id="epg-status" style="margin-top: 1rem;"></div>
       </div>
     </div>
   </main>
 
+  <!-- Configuration & Scripts -->
+  <script src="config.js"></script>
   <script>
-    const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') || window.location.origin.includes('192.168.')
-      ? window.location.origin
-      : 'http://localhost:3001';
+    // State
+    const cfg = window.IPTV_CONFIG || {};
+    let supabaseUrl = localStorage.getItem('iptv_supabase_url') || cfg.supabaseUrl || 'https://qzwunvyrozubfgwlkenh.supabase.co';
+    let supabaseKey = localStorage.getItem('iptv_supabase_key') || cfg.supabaseAnonKey || '';
 
-    let currentPageChannels = [];
-    let allGroups = [];
-    let isFavFilterActive = false;
-    let pinTimerInterval = null;
-    let searchDebounce = null;
+    let currentSelectedType = 'live'; // 'live' | 'movies' | 'series'
+    let currentFilterType = ''; // '' | 'live' | 'movies' | 'series'
+    let currentFilterGroup = '';
+    let currentFilterFav = false;
+    let currentSearch = '';
     let currentPage = 1;
     let pageSize = 40;
+    let totalItems = 0;
     let totalPages = 1;
-    let totalChannelsCount = 0;
+    let currentChannels = [];
+    let searchDebounce = null;
 
-    async function checkHealth() {
+    // Initialize UI
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('cfg-supabase-url').value = supabaseUrl;
+      document.getElementById('cfg-supabase-key').value = supabaseKey;
+      testSupabaseConnection();
+      loadCounts();
+      loadGroups();
+      fetchChannelsPage();
+    });
+
+    // Supabase REST Helper
+    async function fetchSupabase(endpoint, options = {}) {
+      const url = `${supabaseUrl}/rest/v1/${endpoint}`;
+      const headers = {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        ...(options.headers || {})
+      };
+      return fetch(url, { ...options, headers });
+    }
+
+    async function testSupabaseConnection() {
+      const badge = document.getElementById('supabase-status-badge');
+      const hostLabel = document.getElementById('supabase-host-label');
+      const statusDiv = document.getElementById('cfg-test-status');
+
       try {
-        const res = await fetch(`${API_BASE}/api/status`);
+        const t0 = performance.now();
+        const res = await fetchSupabase('iptv_channels?limit=1');
+        const pingMs = Math.round(performance.now() - t0);
+
         if (res.ok) {
-          const data = await res.json();
-          document.getElementById('server-status-badge').className = 'badge badge-online';
-          document.getElementById('server-status-badge').textContent = 'Online';
-          document.getElementById('server-host-label').textContent = `${API_BASE}`;
-
-          document.getElementById('stat-total-channels').textContent = Number(data.totalChannels).toLocaleString('pt-BR');
-          document.getElementById('stat-active-channels').textContent = Number(data.activeChannels).toLocaleString('pt-BR');
-          document.getElementById('stat-total-groups').textContent = Number(data.totalGroups).toLocaleString('pt-BR');
-          document.getElementById('stat-fav-channels').textContent = Number(data.favoriteChannels).toLocaleString('pt-BR');
+          badge.className = 'badge badge-online';
+          badge.textContent = `Supabase Online (${pingMs}ms)`;
+          hostLabel.textContent = new URL(supabaseUrl).host;
+          if (statusDiv) {
+            statusDiv.innerHTML = `<div class="alert alert-success">✅ Conexão bem-sucedida com o Supabase! Tabela iptv_channels acessível.</div>`;
+          }
+        } else if (res.status === 404) {
+          badge.className = 'badge badge-offline';
+          badge.textContent = 'Tabela 404';
+          if (statusDiv) {
+            statusDiv.innerHTML = `<div class="alert alert-danger">⚠️ A tabela <strong>iptv_channels</strong> ainda não foi criada. Execute o arquivo <code>supabase/schema.sql</code> no SQL Editor do Supabase!</div>`;
+          }
         } else {
-          throw new Error('Offline');
+          throw new Error(`HTTP ${res.status}`);
         }
-      } catch {
-        document.getElementById('server-status-badge').className = 'badge badge-offline';
-        document.getElementById('server-status-badge').textContent = 'Servidor Offline';
-      }
-    }
-
-    function switchTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-
-      const targetTab = document.getElementById(`tab-${tabName}`);
-      if (targetTab) targetTab.classList.add('active');
-
-      const buttons = document.querySelectorAll('.nav-btn');
-      if (tabName === 'channels') buttons[0].classList.add('active');
-      if (tabName === 'upload') buttons[1].classList.add('active');
-      if (tabName === 'pairing') {
-        buttons[2].classList.add('active');
-        loadDevices();
-        checkActivePin();
-      }
-      if (tabName === 'epg') buttons[3].classList.add('active');
-    }
-
-    async function loadGroups() {
-      try {
-        const groupRes = await fetch(`${API_BASE}/api/groups`);
-        const groupData = await groupRes.json();
-        allGroups = groupData.groups || [];
-        populateGroupsDropdown();
       } catch (err) {
-        console.error('Falha ao carregar grupos:', err);
+        badge.className = 'badge badge-offline';
+        badge.textContent = 'Supabase Offline';
+        if (statusDiv) {
+          statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro de conexão com o Supabase: ${err.message}</div>`;
+        }
       }
     }
 
-    async function fetchChannelsPage() {
-      const search = document.getElementById('search-input').value.trim();
-      const selectedGroup = document.getElementById('group-select').value;
-      const container = document.getElementById('channels-container');
-
-      const params = new URLSearchParams({
-        page: currentPage,
-        limit: pageSize,
-      });
-
-      if (search) params.append('search', search);
-      if (selectedGroup) params.append('group', selectedGroup);
-      if (isFavFilterActive) params.append('favorites', 'true');
-
-      try {
-        const res = await fetch(`${API_BASE}/api/channels?${params.toString()}`);
-        const data = await res.json();
-
-        currentPageChannels = data.channels || [];
-        currentPage = data.page || 1;
-        totalPages = data.totalPages || 1;
-        totalChannelsCount = data.total || 0;
-
-        renderChannels(currentPageChannels);
-        updatePaginationUI();
-      } catch (err) {
-        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--danger);">Falha ao carregar canais: ${err.message}</div>`;
-      }
-    }
-
-    function updatePaginationUI() {
-      document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (${totalChannelsCount.toLocaleString('pt-BR')} canais)`;
-      document.getElementById('prev-page-btn').disabled = currentPage <= 1;
-      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
-    }
-
-    function changePage(delta) {
-      const newPage = currentPage + delta;
-      if (newPage >= 1 && newPage <= totalPages) {
-        currentPage = newPage;
-        fetchChannelsPage();
-      }
-    }
-
-    function populateGroupsDropdown() {
-      const select = document.getElementById('group-select');
-      select.innerHTML = '<option value="">Todas as Categorias</option>';
-      allGroups.forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.name;
-        opt.textContent = `${g.name} (${g.count.toLocaleString('pt-BR')})`;
-        select.appendChild(opt);
-      });
-    }
-
-    function filterChannels() {
-      if (searchDebounce) clearTimeout(searchDebounce);
-      searchDebounce = setTimeout(() => {
-        currentPage = 1;
-        fetchChannelsPage();
-      }, 300);
-    }
-
-    function toggleFavFilter() {
-      isFavFilterActive = !isFavFilterActive;
-      const btn = document.getElementById('fav-toggle-btn');
-      if (isFavFilterActive) {
-        btn.classList.add('btn-primary');
-        btn.classList.remove('btn-outline');
-      } else {
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-outline');
-      }
-      currentPage = 1;
+    function saveSupabaseConfig() {
+      const u = document.getElementById('cfg-supabase-url').value.trim();
+      const k = document.getElementById('cfg-supabase-key').value.trim();
+      if (!u || !k) return alert('Preencha a URL e a Anon Key!');
+      localStorage.setItem('iptv_supabase_url', u);
+      localStorage.setItem('iptv_supabase_key', k);
+      supabaseUrl = u;
+      supabaseKey = k;
+      testSupabaseConnection();
+      loadCounts();
       fetchChannelsPage();
     }
 
-    function renderChannels(list) {
+    // Load statistics counts
+    async function loadCounts() {
+      try {
+        const getCount = async (filter) => {
+          let ep = `iptv_channels?is_hidden=eq.false&select=count`;
+          if (filter === 'fav') ep += `&is_favorite=eq.true`;
+          else if (filter) ep += `&content_type=eq.${filter}`;
+          const r = await fetchSupabase(ep, { headers: { 'Prefer': 'count=exact' } });
+          return r.ok ? (parseInt(r.headers.get('content-range')?.split('/')[1], 10) || 0) : 0;
+        };
+
+        const [tot, live, mov, ser, fav] = await Promise.all([
+          getCount(''),
+          getCount('live'),
+          getCount('movies'),
+          getCount('series'),
+          getCount('fav')
+        ]);
+
+        document.getElementById('stat-total-channels').textContent = tot.toLocaleString('pt-BR');
+        document.getElementById('stat-live-channels').textContent = live.toLocaleString('pt-BR');
+        document.getElementById('stat-movies-channels').textContent = mov.toLocaleString('pt-BR');
+        document.getElementById('stat-series-channels').textContent = ser.toLocaleString('pt-BR');
+        document.getElementById('stat-fav-channels').textContent = fav.toLocaleString('pt-BR');
+      } catch (e) {
+        console.warn('Erro ao carregar contagens:', e);
+      }
+    }
+
+    // Load Distinct Groups
+    async function loadGroups() {
+      try {
+        let ep = `iptv_channels?is_hidden=eq.false&select=group_title`;
+        if (currentFilterType) ep += `&content_type=eq.${currentFilterType}`;
+        const res = await fetchSupabase(ep);
+        if (res.ok) {
+          const rows = await res.json();
+          const map = {};
+          rows.forEach(r => {
+            const g = (r.group_title || 'Geral').trim();
+            map[g] = (map[g] || 0) + 1;
+          });
+          const select = document.getElementById('group-select');
+          select.innerHTML = '<option value="">Todas as Categorias</option>';
+          Object.entries(map).sort((a,b) => b[1] - a[1]).forEach(([name, count]) => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = `${name} (${count.toLocaleString('pt-BR')})`;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar grupos:', e);
+      }
+    }
+
+    // Fetch Channel Page
+    async function fetchChannelsPage() {
       const container = document.getElementById('channels-container');
-      if (!list || list.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum canal encontrado nesta página ou filtro.</div>';
+      const offset = (currentPage - 1) * pageSize;
+
+      let query = `iptv_channels?order=sort_order.asc,name.asc&offset=${offset}&limit=${pageSize}`;
+      if (currentFilterType) query += `&content_type=eq.${currentFilterType}`;
+      if (currentFilterGroup) query += `&group_title=eq.${encodeURIComponent(currentFilterGroup)}`;
+      if (currentFilterFav) query += `&is_favorite=eq.true`;
+      if (currentSearch) query += `&name=ilike.*${encodeURIComponent(currentSearch)}*`;
+
+      try {
+        const res = await fetchSupabase(query, { headers: { 'Prefer': 'count=exact' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const range = res.headers.get('content-range');
+        totalItems = range ? (parseInt(range.split('/')[1], 10) || 0) : 0;
+        totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        currentChannels = await res.json();
+
+        renderChannels();
+        updatePaginationUI();
+      } catch (err) {
+        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--danger);">Falha ao carregar conteúdos: ${err.message}</div>`;
+      }
+    }
+
+    function renderChannels() {
+      const container = document.getElementById('channels-container');
+      if (currentChannels.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum conteúdo encontrado para estes filtros.</div>`;
         return;
       }
 
-      container.innerHTML = list.map(c => `
-        <div class="channel-item ${c.isHidden ? 'hidden-chan' : ''}">
+      container.innerHTML = currentChannels.map(c => `
+        <div class="channel-item ${c.is_hidden ? 'hidden-chan' : ''}">
           <div class="channel-info">
-            ${c.logoUrl ? `<img src="${c.logoUrl}" loading="lazy" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
+            ${c.logo_url ? `<img src="${c.logo_url}" loading="lazy" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
             <div>
               <div class="channel-name" title="${c.name}">${c.name}</div>
-              <div class="channel-group-tag">${c.groupTitle} ${c.originalName !== c.name ? `(orig: ${c.originalName})` : ''}</div>
+              <div class="channel-group-tag">
+                <span class="type-pill type-${c.content_type}">${c.content_type === 'live' ? 'TV' : (c.content_type === 'movies' ? 'Filme' : 'Série')}</span>
+                <span>• ${c.group_title || 'Geral'}</span>
+              </div>
             </div>
           </div>
           <div class="channel-actions">
-            <button class="icon-btn ${c.isFavorite ? 'active-fav' : ''}" title="Favorito" onclick="toggleFavorite('${c.id}', ${!c.isFavorite})">⭐</button>
-            <button class="icon-btn" title="Renomear" onclick="renameChannel('${c.id}', '${c.name.replace(/'/g, "\\'")}')">✏️</button>
-            <button class="icon-btn" title="${c.isHidden ? 'Exibir' : 'Ocultar'}" onclick="toggleHidden('${c.id}', ${!c.isHidden})">${c.isHidden ? '👁️' : '🚫'}</button>
+            <button class="icon-btn ${c.is_favorite ? 'active-fav' : ''}" title="Favorito" onclick="toggleItemFavorite('${c.id}', ${!c.is_favorite})">⭐</button>
+            <button class="icon-btn" title="Renomear" onclick="renameItem('${c.id}', '${c.name.replace(/'/g, "\\'")}')">✏️</button>
+            <button class="icon-btn" title="${c.is_hidden ? 'Exibir' : 'Ocultar'}" onclick="toggleItemHidden('${c.id}', ${!c.is_hidden})">${c.is_hidden ? '👁️' : '🚫'}</button>
+            <button class="icon-btn" title="Excluir" style="color: var(--danger);" onclick="deleteItem('${c.id}')">🗑️</button>
           </div>
         </div>
       `).join('');
     }
 
-    async function toggleFavorite(channelId, isFavorite) {
-      await fetch(`${API_BASE}/api/channels/${channelId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isFavorite }),
-      });
-      const ch = currentPageChannels.find(c => c.id === channelId);
-      if (ch) ch.isFavorite = isFavorite;
-      renderChannels(currentPageChannels);
-      checkHealth();
+    function updatePaginationUI() {
+      document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (${totalItems.toLocaleString('pt-BR')} itens)`;
+      document.getElementById('prev-page-btn').disabled = currentPage <= 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
     }
 
-    async function toggleHidden(channelId, isHidden) {
-      await fetch(`${API_BASE}/api/channels/${channelId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isHidden }),
-      });
-      const ch = currentPageChannels.find(c => c.id === channelId);
-      if (ch) ch.isHidden = isHidden;
-      renderChannels(currentPageChannels);
-      checkHealth();
+    function changePage(delta) {
+      currentPage = Math.max(1, Math.min(totalPages, currentPage + delta));
+      fetchChannelsPage();
     }
 
-    async function renameChannel(channelId, currentName) {
-      const newName = prompt('Novo nome para o canal:', currentName);
-      if (newName && newName.trim() && newName !== currentName) {
-        await fetch(`${API_BASE}/api/channels/${channelId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName.trim() }),
-        });
-        const ch = currentPageChannels.find(c => c.id === channelId);
-        if (ch) ch.name = newName.trim();
-        renderChannels(currentPageChannels);
+    function filterByType(type) {
+      currentFilterType = type;
+      currentPage = 1;
+      document.querySelectorAll('.filter-chips .chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.type === type);
+      });
+      loadGroups();
+      fetchChannelsPage();
+    }
+
+    function onSearchInput() {
+      if (searchDebounce) clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        currentSearch = document.getElementById('search-input').value.trim();
+        currentPage = 1;
+        fetchChannelsPage();
+      }, 300);
+    }
+
+    function onGroupSelect() {
+      currentFilterGroup = document.getElementById('group-select').value;
+      currentPage = 1;
+      fetchChannelsPage();
+    }
+
+    function toggleFavFilter() {
+      currentFilterFav = !currentFilterFav;
+      const btn = document.getElementById('fav-toggle-btn');
+      btn.classList.toggle('btn-primary', currentFilterFav);
+      btn.classList.toggle('btn-outline', !currentFilterFav);
+      currentPage = 1;
+      fetchChannelsPage();
+    }
+
+    // Item Action Modifiers
+    async function toggleItemFavorite(id, isFav) {
+      await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_favorite: isFav })
+      });
+      loadCounts();
+      fetchChannelsPage();
+    }
+
+    async function toggleItemHidden(id, isHidden) {
+      await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_hidden: isHidden })
+      });
+      fetchChannelsPage();
+    }
+
+    async function renameItem(id, currentName) {
+      const newName = prompt('Novo nome para o conteúdo:', currentName);
+      if (!newName || newName.trim() === currentName) return;
+      await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim() })
+      });
+      fetchChannelsPage();
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Deseja realmente excluir este item?')) return;
+      await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      loadCounts();
+      fetchChannelsPage();
+    }
+
+    async function clearCurrentCategory() {
+      const catName = currentFilterType ? (currentFilterType === 'live' ? 'TV Ao Vivo' : (currentFilterType === 'movies' ? 'Filmes' : 'Séries')) : 'Todos os Conteúdos';
+      if (!confirm(`ATENÇÃO: Deseja apagar permanentemente todos os itens da categoria [${catName}] no Supabase?`)) return;
+
+      let ep = 'iptv_channels';
+      if (currentFilterType) ep += `?content_type=eq.${currentFilterType}`;
+      else ep += `?is_hidden=in.(true,false)`; // delete all
+
+      await fetchSupabase(ep, { method: 'DELETE' });
+      alert(`Categoria [${catName}] limpa com sucesso!`);
+      loadCounts();
+      loadGroups();
+      fetchChannelsPage();
+    }
+
+    // ==========================================
+    // M3U IMPORT ENGINE WITH CATEGORY SELECTOR
+    // ==========================================
+    function selectImportType(type) {
+      currentSelectedType = type;
+      document.querySelectorAll('.category-picker-grid .category-pick-card').forEach(c => {
+        c.classList.toggle('active', c.dataset.type === type);
+      });
+    }
+
+    function parseM3ULineByLine(content, contentType) {
+      const lines = content.split(/\r?\n/);
+      const items = [];
+      let pending = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        if (line.startsWith('#EXTINF:')) {
+          const tvgId = (line.match(/tvg-id="([^"]*)"/i) || [])[1] || '';
+          const tvgName = (line.match(/tvg-name="([^"]*)"/i) || [])[1] || '';
+          const logoUrl = (line.match(/tvg-logo="([^"]*)"/i) || [])[1] || '';
+          const groupTitle = (line.match(/group-title="([^"]*)"/i) || [])[1] || 'Geral';
+          const commaIdx = line.lastIndexOf(',');
+          const name = commaIdx !== -1 ? line.substring(commaIdx + 1).trim() : 'Canal Sem Nome';
+
+          pending = {
+            content_type: contentType,
+            name: name || 'Canal Sem Nome',
+            original_name: name,
+            group_title: groupTitle || 'Geral',
+            logo_url: logoUrl || null,
+            tvg_id: tvgId || null,
+            tvg_name: tvgName || null,
+            sort_order: items.length + 1,
+            is_favorite: false,
+            is_hidden: false,
+          };
+        } else if (line.startsWith('#')) {
+          continue;
+        } else if (pending) {
+          // Stream URL line
+          pending.stream_url = line;
+          pending.id = 'ch_' + Math.random().toString(36).substring(2, 11) + '_' + items.length;
+          items.push(pending);
+          pending = null;
+        }
       }
+      return items;
     }
 
-    async function uploadM3UFile() {
+    async function uploadM3UFileToSupabase() {
       const fileInput = document.getElementById('m3u-file-input');
       const statusDiv = document.getElementById('upload-status');
+      const progressContainer = document.getElementById('upload-progress-container');
+      const progressFill = document.getElementById('upload-progress-fill');
+      const progressLabel = document.getElementById('upload-progress-label');
+      const progressPct = document.getElementById('upload-progress-pct');
+      const replaceMode = document.querySelector('input[name="import-mode"]:checked').value === 'replace';
+
       if (!fileInput.files || fileInput.files.length === 0) {
-        statusDiv.innerHTML = '<div class="alert alert-error">Por favor, selecione um arquivo .m3u ou .m3u8</div>';
-        return;
+        return alert('Selecione um arquivo M3U/M3U8 primeiro!');
       }
 
       const file = fileInput.files[0];
-      statusDiv.innerHTML = '<div class="alert alert-info">Lendo e enviando arquivo...</div>';
+      progressContainer.style.display = 'block';
+      progressFill.style.width = '5%';
+      progressLabel.textContent = `Lendo arquivo (${(file.size / (1024*1024)).toFixed(1)} MB)...`;
 
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const content = e.target.result;
-          const res = await fetch(`${API_BASE}/api/playlists/upload`, {
-            method: 'POST',
-            body: content,
-          });
-          const data = await res.json();
-          if (res.ok) {
-            statusDiv.innerHTML = `<div class="alert alert-info">✅ Sucesso! ${Number(data.status.totalChannels).toLocaleString('pt-BR')} canais carregados em ${data.status.totalGroups} categorias.</div>`;
-            await checkHealth();
-            await loadGroups();
-            currentPage = 1;
-            await fetchChannelsPage();
-          } else {
-            statusDiv.innerHTML = `<div class="alert alert-error">Erro: ${data.error}</div>`;
+          const text = e.target.result;
+          progressLabel.textContent = 'Interpretando playlist e metadados...';
+          const items = parseM3ULineByLine(text, currentSelectedType);
+
+          if (items.length === 0) {
+            throw new Error('Nenhum canal ou stream válido encontrado no arquivo.');
           }
+
+          // Se for modo substituir, apagar os antigos dessa categoria
+          if (replaceMode) {
+            progressLabel.textContent = `Limpando conteúdos anteriores de ${currentSelectedType}...`;
+            await fetchSupabase(`iptv_channels?content_type=eq.${currentSelectedType}`, { method: 'DELETE' });
+          }
+
+          // Enviar em lotes de 200 itens
+          const BATCH_SIZE = 200;
+          const totalBatches = Math.ceil(items.length / BATCH_SIZE);
+
+          for (let b = 0; b < totalBatches; b++) {
+            const batch = items.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+            const pct = Math.round(((b + 1) / totalBatches) * 100);
+
+            progressLabel.textContent = `Enviando bloco ${b + 1} de ${totalBatches} (${batch.length} itens)...`;
+            progressFill.style.width = `${pct}%`;
+            progressPct.textContent = `${pct}%`;
+
+            const res = await fetchSupabase('iptv_channels', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates'
+              },
+              body: JSON.stringify(batch)
+            });
+
+            if (!res.ok) {
+              const errTxt = await res.text();
+              throw new Error(`Falha no lote ${b + 1}: ${errTxt}`);
+            }
+          }
+
+          statusDiv.innerHTML = `<div class="alert alert-success">🎉 Sucesso! <strong>${items.length.toLocaleString('pt-BR')} itens</strong> foram importados como <strong>${currentSelectedType.toUpperCase()}</strong> no Supabase!</div>`;
+          progressLabel.textContent = 'Importação concluída!';
+          loadCounts();
+          loadGroups();
+          fetchChannelsPage();
         } catch (err) {
-          statusDiv.innerHTML = `<div class="alert alert-error">Falha ao enviar: ${err.message}</div>`;
+          statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro na importação: ${err.message}</div>`;
         }
       };
       reader.readAsText(file);
     }
 
-    async function importM3UUrl() {
-      const urlInput = document.getElementById('m3u-url-input');
+    async function importM3UUrlToSupabase() {
+      const url = document.getElementById('m3u-url-input').value.trim();
       const statusDiv = document.getElementById('url-status');
-      const url = urlInput.value.trim();
+      if (!url) return alert('Digite a URL da playlist!');
 
-      if (!url) {
-        statusDiv.innerHTML = '<div class="alert alert-error">Por favor, digite a URL da playlist</div>';
-        return;
-      }
-
-      statusDiv.innerHTML = '<div class="alert alert-info">⏳ Validando SSRF e baixando playlist do servidor remoto...</div>';
-
+      statusDiv.innerHTML = `<div class="alert alert-info">⏳ Baixando playlist da URL remota...</div>`;
       try {
-        const res = await fetch(`${API_BASE}/api/playlists/import-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          statusDiv.innerHTML = `<div class="alert alert-info">✅ Playlist importada com sucesso! ${data.status.totalChannels} canais prontos.</div>`;
-          await checkHealth();
-          await loadChannels();
-        } else {
-          statusDiv.innerHTML = `<div class="alert alert-error">Erro na importação: ${data.error}</div>`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Falha ao baixar URL: HTTP ${res.status}`);
+        const text = await res.text();
+        const items = parseM3ULineByLine(text, currentSelectedType);
+
+        statusDiv.innerHTML = `<div class="alert alert-info">Enviando ${items.length} itens para o Supabase...</div>`;
+        const BATCH_SIZE = 200;
+        for (let b = 0; b < Math.ceil(items.length / BATCH_SIZE); b++) {
+          const batch = items.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+          await fetchSupabase('iptv_channels', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+            body: JSON.stringify(batch)
+          });
         }
-      } catch (err) {
-        statusDiv.innerHTML = `<div class="alert alert-error">Falha na conexão: ${err.message}</div>`;
+        statusDiv.innerHTML = `<div class="alert alert-success">🎉 ${items.length} itens importados com sucesso!</div>`;
+        loadCounts();
+        fetchChannelsPage();
+      } catch (e) {
+        statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro: ${e.message}</div>`;
       }
     }
 
+    // Navigation Switcher
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+      const target = document.getElementById(`tab-${tabName}`);
+      if (target) target.classList.add('active');
+
+      const btns = document.querySelectorAll('.nav-btn');
+      if (tabName === 'channels') btns[0].classList.add('active');
+      if (tabName === 'upload') btns[1].classList.add('active');
+      if (tabName === 'deploy') btns[2].classList.add('active');
+      if (tabName === 'pairing') btns[3].classList.add('active');
+    }
+
+    // PIN Pairing (for Local Server compatibility)
     async function generatePIN() {
       try {
-        const res = await fetch(`${API_BASE}/api/devices/pair/request`, { method: 'POST' });
+        const res = await fetch('http://192.168.18.7:3001/api/pairing/pin', { method: 'POST' });
         const data = await res.json();
-        if (res.ok) {
-          displayPin(data.pin, data.expiresAt);
-        }
-      } catch (err) {
-        alert('Falha ao gerar PIN: ' + err.message);
+        document.getElementById('pin-container').style.display = 'block';
+        document.getElementById('pin-value').textContent = data.pin;
+      } catch {
+        alert('Servidor local não encontrado para gerar PIN. Você pode usar a conexão direta com o Supabase na TV!');
       }
     }
-
-    async function checkActivePin() {
-      try {
-        const res = await fetch(`${API_BASE}/api/devices/pair/status`);
-        const data = await res.json();
-        if (data.activePin) {
-          displayPin(data.activePin.pin, data.activePin.expiresAt);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function displayPin(pin, expiresAt) {
-      document.getElementById('pin-container').style.display = 'block';
-      document.getElementById('pin-value').textContent = pin;
-      document.getElementById('generate-pin-btn').textContent = '🔄 Gerar Outro PIN';
-
-      if (pinTimerInterval) clearInterval(pinTimerInterval);
-
-      const target = new Date(expiresAt).getTime();
-      const updateTimer = () => {
-        const remaining = Math.max(0, Math.floor((target - Date.now()) / 1000));
-        const mins = Math.floor(remaining / 60);
-        const secs = remaining % 60;
-        document.getElementById('pin-timer').textContent = `Expira em ${mins}:${secs < 10 ? '0' : ''}${secs}`;
-        if (remaining <= 0) {
-          clearInterval(pinTimerInterval);
-          document.getElementById('pin-timer').textContent = 'PIN Expirado. Gere um novo.';
-        }
-      };
-      updateTimer();
-      pinTimerInterval = setInterval(updateTimer, 1000);
-    }
-
-    async function loadDevices() {
-      try {
-        const res = await fetch(`${API_BASE}/api/devices`);
-        const data = await res.json();
-        const container = document.getElementById('devices-container');
-        if (!data.devices || data.devices.length === 0) {
-          container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Nenhuma TV pareada no momento.</p>';
-          return;
-        }
-
-        container.innerHTML = `
-          <table class="device-table">
-            <thead>
-              <tr>
-                <th>Dispositivo</th>
-                <th>ID</th>
-                <th>Pareado em</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${data.devices.map(d => `
-                <tr>
-                  <td>📺 <strong>${d.name}</strong></td>
-                  <td style="font-family: monospace; font-size: 0.8rem;">${d.deviceId}</td>
-                  <td style="font-size: 0.85rem; color: var(--text-muted);">${new Date(d.pairedAt).toLocaleString('pt-BR')}</td>
-                  <td>
-                    <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="revokeDevice('${d.deviceId}')">Revogar</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      } catch (err) {
-        console.error('Falha ao listar dispositivos:', err);
-      }
-    }
-
-    async function revokeDevice(deviceId) {
-      if (confirm('Deseja realmente desconectar esta TV? Ela precisará ser pareada novamente com um novo PIN.')) {
-        await fetch(`${API_BASE}/api/devices/${deviceId}`, { method: 'DELETE' });
-        loadDevices();
-        checkHealth();
-      }
-    }
-
-    async function uploadEPGFile() {
-      const fileInput = document.getElementById('epg-file-input');
-      const statusDiv = document.getElementById('epg-status');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        statusDiv.innerHTML = '<div class="alert alert-error">Selecione um arquivo XMLTV (.xml)</div>';
-        return;
-      }
-
-      const file = fileInput.files[0];
-      statusDiv.innerHTML = '<div class="alert alert-info">Processando guia XMLTV...</div>';
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const content = e.target.result;
-          const res = await fetch(`${API_BASE}/api/epg/upload`, {
-            method: 'POST',
-            body: content,
-          });
-          const data = await res.json();
-          if (res.ok) {
-            statusDiv.innerHTML = `<div class="alert alert-info">✅ Guia carregado com sucesso! ${data.status.totalProgrammes} programas mapeados.</div>`;
-            await checkHealth();
-          } else {
-            statusDiv.innerHTML = `<div class="alert alert-error">Erro: ${data.error}</div>`;
-          }
-        } catch (err) {
-          statusDiv.innerHTML = `<div class="alert alert-error">Falha ao enviar: ${err.message}</div>`;
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // Inicialização
-    async function startApp() {
-      await checkHealth();
-      await loadGroups();
-      await fetchChannelsPage();
-    }
-    startApp();
-    setInterval(checkHealth, 10000);
   </script>
 </body>
 </html>

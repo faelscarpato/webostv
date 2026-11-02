@@ -95,7 +95,26 @@ export function createLocalServer(config: ServerConfig) {
         }
       }
 
-      // Serve Manager Static Assets (Logo, Favicon)
+      // Serve Manager Static Assets (Logo, Favicon, Config)
+      if (req.method === 'GET' && pathname === '/config.js') {
+        const candidatePaths = [
+          path.resolve(process.cwd(), 'apps/manager/config.js'),
+          path.resolve(process.cwd(), 'config.js'),
+          path.resolve(config.dataDir, '../apps/manager/config.js'),
+        ];
+        for (const candidate of candidatePaths) {
+          if (fs.existsSync(candidate)) {
+            const js = fs.readFileSync(candidate, 'utf-8');
+            res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+            res.end(js);
+            return;
+          }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+        res.end('window.IPTV_CONFIG = {};\n');
+        return;
+      }
+
       if (req.method === 'GET' && (pathname === '/logo.png' || pathname === '/logo-ui.png' || pathname === '/favicon.ico')) {
         const fileName = pathname === '/favicon.ico' ? 'logo-ui.png' : pathname.slice(1);
         const candidatePaths = [

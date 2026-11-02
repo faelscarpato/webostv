@@ -29,13 +29,20 @@
     COLOR_BLUE: 406,
   };
 
+  // Configuration (from window.IPTV_CONFIG or localStorage)
+  const config = window.IPTV_CONFIG || {};
+
   // State
   const state = {
+    supabaseUrl: localStorage.getItem('iptv_supabase_url') || config.supabaseUrl || 'https://qzwunvyrozubfgwlkenh.supabase.co',
+    supabaseKey: localStorage.getItem('iptv_supabase_key') || config.supabaseAnonKey || '',
     serverUrl: localStorage.getItem('iptv_server_url') || 'http://192.168.18.7:3001',
     deviceToken: localStorage.getItem('iptv_device_token') || '',
     deviceId: getOrCreateDeviceId(),
-    currentView: 'catalog', // 'catalog' | 'player' | 'epg' | 'server'
-    focusSection: 'channels', // 'tabs' | 'categories' | 'channels' | 'inspector' | 'player' | 'epg'
+    currentView: 'hub', // 'hub' | 'catalog' | 'player' | 'epg' | 'server'
+    currentContentType: 'live', // 'live' | 'movies' | 'series' | 'favorites'
+    hubIndex: 0, // 0: live, 1: movies, 2: series, 3: favorites
+    focusSection: 'hub', // 'hub' | 'tabs' | 'categories' | 'channels' | 'inspector' | 'player' | 'epg'
     categoryIndex: 0,
     channelIndex: 0,
     catalogPage: 1,
@@ -77,6 +84,18 @@
     catalogPrevBtn: document.getElementById('catalog-prev-btn'),
     catalogNextBtn: document.getElementById('catalog-next-btn'),
     numericDisplay: document.getElementById('numeric-input-display'),
+    // Hub Elements (First Screen)
+    viewHub: document.getElementById('view-hub'),
+    hubCardLive: document.getElementById('hub-card-live'),
+    hubCardMovies: document.getElementById('hub-card-movies'),
+    hubCardSeries: document.getElementById('hub-card-series'),
+    hubCardFavorites: document.getElementById('hub-card-favorites'),
+    hubCountLive: document.getElementById('hub-count-live'),
+    hubCountMovies: document.getElementById('hub-count-movies'),
+    hubCountSeries: document.getElementById('hub-count-series'),
+    hubCountFavorites: document.getElementById('hub-count-favorites'),
+    navCatalogLabel: document.getElementById('nav-catalog-label'),
+    navCatalogIcon: document.getElementById('nav-catalog-icon'),
     // Views
     viewCatalog: document.getElementById('view-catalog'),
     viewPlayer: document.getElementById('view-player'),
@@ -132,20 +151,154 @@
   setInterval(updateClock, 1000);
   updateClock();
 
+  // Supabase Rest Helper
+  async function fetchFromSupabase(endpoint, options = {}) {
+    const url = `${state.supabaseUrl}/rest/v1/${endpoint}`;
+    const headers = {
+      'apikey': state.supabaseKey,
+      'Authorization': `Bearer ${state.supabaseKey}`,
+      ...(options.headers || {})
+    };
+    return fetch(url, { ...options, headers });
+  }
+
+  // Load Live Counts for the 4 Hub Cards
+  async function loadHubCounts() {
+    try {
+      const fetchCount = async (type) => {
+        let ep = `iptv_channels?is_hidden=eq.false&select=count`;
+        if (type === 'favorites') ep += `&is_favorite=eq.true`;
+        else if (type) ep += `&content_type=eq.${type}`;
+        const r = await fetchFromSupabase(ep, { headers: { 'Prefer': 'count=exact' } });
+        if (r.ok) {
+          const range = r.headers.get('content-range');
+          if (range) return parseInt(range.split('/')[1], 10) || 0;
+        }
+        return 0;
+      };
+
+      const [cLive, cMovies, cSeries, cFav] = await Promise.all([
+        fetchCount('live'),
+        fetchCount('movies'),
+        fetchCount('series'),
+        fetchCount('favorites'),
+      ]);
+
+      if (dom.hubCountLive) dom.hubCountLive.textContent = `${cLive.toLocaleString('pt-BR')} canais`;
+      if (dom.hubCountMovies) dom.hubCountMovies.textContent = `${cMovies.toLocaleString('pt-BR')} filmes`;
+      if (dom.hubCountSeries) dom.hubCountSeries.textContent = `${cSeries.toLocaleString('pt-BR')} séries`;
+      if (dom.hubCountFavorites) dom.hubCountFavorites.textContent = `${cFav.toLocaleString('pt-BR')} salvos`;
+    } catch (err) {
+      console.warn('Erro ao carregar contagens do Hub:', err);
+    }
+  }
+
+  // Hub Card Focus Highlighting
+  function updateHubFocus() {
+    const cards = [
+      dom.hubCardLive,
+      dom.hubCardMovies,
+      dom.hubCardSeries,
+      dom.hubCardFavorites
+    ];
+    cards.forEach((c, idx) => {
+      if (!c) return;
+      if (idx === state.hubIndex) {
+        c.classList.add('focused', 'focus-tv-active');
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        c.classList.remove('focused', 'focus-tv-active');
+      }
+    });
+  }
+
+  // Select Mode from Hub (Live TV, Movies, Series, Favorites)
+  async function selectHubMode(mode) {
+    state.currentContentType = mode;
+    state.catalogPage = 1;
+    state.categoryIndex = 0;
+    state.channelIndex = 0;
+
+    let title = 'Catálogo de TV Ao Vivo';
+    let icon = 'live_tv';
+    if (mode === 'movies') {
+      title = 'Catálogo de Filmes (VOD)';
+      icon = 'movie';
+    } else if (mode === 'series') {
+      title = 'Catálogo de Séries (VOD)';
+      icon = 'video_library';
+    } else if (mode === 'favorites') {
+      title = 'Meus Favoritos';
+      icon = 'star';
+    }
+
+    if (dom.currentCategoryTitle) dom.currentCategoryTitle.textContent = title;
+    if (dom.navCatalogLabel) dom.navCatalogLabel.textContent = title.replace('Catálogo de ', '');
+    if (dom.navCatalogIcon) dom.navCatalogIcon.textContent = icon;
+
+    showLoading(true, `Carregando ${title}...`);
+    switchToView('catalog');
+
+    await loadGroupsForContentType(mode);
+    renderCategoryRail();
+    await loadCatalogChannels();
+    showLoading(false);
+  }
+
+  // Load Groups for specific content type
+  async function loadGroupsForContentType(mode) {
+    try {
+      let endpoint = `iptv_channels?is_hidden=eq.false&select=group_title`;
+      if (mode !== 'favorites') {
+        endpoint += `&content_type=eq.${mode}`;
+      } else {
+        endpoint += `&is_favorite=eq.true`;
+      }
+
+      const res = await fetchFromSupabase(endpoint);
+      if (res.ok) {
+        const rows = await res.json();
+        const counts = {};
+        rows.forEach(r => {
+          const g = (r.group_title || 'Geral').trim();
+          counts[g] = (counts[g] || 0) + 1;
+        });
+        const dynamicGroups = Object.entries(counts)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count);
+
+        state.groups = [
+          { name: 'Todos', count: rows.length },
+          ...dynamicGroups
+        ];
+        return;
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar grupos do Supabase:', e);
+    }
+
+    // Fallback: grupos do servidor local
+    try {
+      const res = await fetch(`${state.serverUrl}/api/groups`);
+      if (res.ok) {
+        const data = await res.json();
+        state.groups = data.groups || [];
+      }
+    } catch {
+      state.groups = [{ name: 'Todos', count: 0 }];
+    }
+  }
+
   // Initialization
   async function init() {
     setupEventListeners();
     setupVideoPlayer();
 
     if (dom.headerServerIp) {
-      dom.headerServerIp.textContent = state.serverUrl.replace(/^https?:\/\//, '');
+      dom.headerServerIp.textContent = 'Supabase Cloud';
     }
 
-    if (!state.deviceToken) {
-      switchToView('server');
-    } else {
-      await loadInitialData();
-    }
+    switchToView('hub');
   }
 
   // View Switcher
@@ -165,12 +318,18 @@
     }
 
     // Hide all views
+    if (dom.viewHub) dom.viewHub.classList.add('hidden');
     dom.viewCatalog.classList.add('hidden');
     dom.viewPlayer.classList.add('hidden');
     dom.viewEpg.classList.add('hidden');
     dom.viewServer.classList.add('hidden');
 
-    if (viewName === 'catalog') {
+    if (viewName === 'hub') {
+      if (dom.viewHub) dom.viewHub.classList.remove('hidden');
+      state.focusSection = 'hub';
+      updateHubFocus();
+      loadHubCounts();
+    } else if (viewName === 'catalog') {
       dom.viewCatalog.classList.remove('hidden');
       state.focusSection = 'channels';
       updateChannelFocus();
@@ -282,27 +441,70 @@
   async function loadCatalogChannels() {
     const pills = dom.categoryRail.querySelectorAll('.category-pill');
     const selectedPill = pills[state.categoryIndex];
-    if (!selectedPill) return;
+    const groupName = selectedPill?.dataset?.name;
+    const isFav = selectedPill?.dataset?.type === 'fav' || state.isOnlyFavorites || state.currentContentType === 'favorites';
 
-    const type = selectedPill.dataset.type;
-    const headers = { 'Authorization': `Bearer ${state.deviceToken}` };
-    const params = new URLSearchParams({
-      page: state.catalogPage,
-      limit: state.catalogLimit,
-    });
+    const offset = (state.catalogPage - 1) * state.catalogLimit;
 
-    if (type === 'fav' || state.isOnlyFavorites) {
-      params.append('favorites', 'true');
-      dom.currentCategoryTitle.textContent = 'Canais Favoritos';
-    } else if (type === 'all') {
-      dom.currentCategoryTitle.textContent = 'Todos os Canais';
-    } else if (type === 'group') {
-      const gName = selectedPill.dataset.name;
-      params.append('group', gName);
-      dom.currentCategoryTitle.textContent = gName;
+    // 1. Try Supabase
+    try {
+      let query = `iptv_channels?is_hidden=eq.false&order=sort_order.asc,id.asc&offset=${offset}&limit=${state.catalogLimit}`;
+      if (isFav) {
+        query += '&is_favorite=eq.true';
+      } else if (state.currentContentType && state.currentContentType !== 'favorites') {
+        query += `&content_type=eq.${state.currentContentType}`;
+      }
+
+      if (groupName && groupName !== 'Todos') {
+        query += `&group_title=eq.${encodeURIComponent(groupName)}`;
+      }
+
+      const res = await fetchFromSupabase(query, {
+        headers: { 'Prefer': 'count=exact' }
+      });
+
+      if (res.ok) {
+        const totalHeader = res.headers.get('content-range');
+        const totalCount = totalHeader ? parseInt(totalHeader.split('/')[1], 10) || 0 : 0;
+        const rows = await res.json();
+
+        state.channels = rows.map(c => ({
+          id: c.id,
+          name: c.name,
+          url: c.stream_url,
+          logoUrl: c.logo_url,
+          groupTitle: c.group_title,
+          isFavorite: c.is_favorite,
+          tvgId: c.tvg_id,
+          originalName: c.original_name,
+        }));
+
+        state.catalogTotalPages = Math.max(1, Math.ceil(totalCount / state.catalogLimit));
+        dom.channelCounter.innerHTML = `Exibindo <span class="text-primary font-bold">${totalCount}</span> itens`;
+        dom.catalogPageLabel.textContent = `Página ${state.catalogPage} de ${state.catalogTotalPages}`;
+
+        dom.catalogPrevBtn.disabled = state.catalogPage <= 1;
+        dom.catalogNextBtn.disabled = state.catalogPage >= state.catalogTotalPages;
+
+        state.channelIndex = 0;
+        renderChannelsMatrix();
+        return;
+      }
+    } catch (err) {
+      console.warn('Falha na consulta ao Supabase, tentando servidor local:', err);
     }
 
+    // 2. Fallback to Local Server
     try {
+      const headers = { 'Authorization': `Bearer ${state.deviceToken}` };
+      const params = new URLSearchParams({
+        page: state.catalogPage,
+        limit: state.catalogLimit,
+      });
+
+      if (isFav) params.append('favorites', 'true');
+      if (groupName && groupName !== 'Todos') params.append('group', groupName);
+
       const res = await fetch(`${state.serverUrl}/api/channels?${params.toString()}`, { headers });
       const data = await res.json();
 
@@ -316,8 +518,8 @@
 
       state.channelIndex = 0;
       renderChannelsMatrix();
-    } catch (err) {
-      console.error('Falha ao buscar canais:', err);
+    } catch (e) {
+      console.error('Falha em ambos os provedores (Supabase e Servidor Local):', e);
     }
   }
 
@@ -838,8 +1040,8 @@
       return;
     }
 
-    if (state.currentView === 'epg' || state.currentView === 'server') {
-      switchToView('catalog');
+    if (state.currentView === 'catalog' || state.currentView === 'epg' || state.currentView === 'server') {
+      switchToView('hub');
       return;
     }
   }
@@ -873,11 +1075,31 @@
         state.numericBuffer = '';
         if (dom.numericDisplay) dom.numericDisplay.textContent = '_ _ _';
 
-        if (targetNum > 0 && targetNum <= state.channels.length) {
+        if (state.currentView === 'hub') {
+          const modes = ['live', 'movies', 'series', 'favorites'];
+          if (targetNum >= 1 && targetNum <= 4) {
+            selectHubMode(modes[targetNum - 1]);
+          }
+        } else if (targetNum > 0 && targetNum <= state.channels.length) {
           state.channelIndex = targetNum - 1;
           updateChannelFocus();
         }
       }, 1500);
+      return;
+    }
+
+    // View: HUB (4 CARDS NAVIGATION)
+    if (state.currentView === 'hub') {
+      const modes = ['live', 'movies', 'series', 'favorites'];
+      if (key === KEYS.LEFT) {
+        state.hubIndex = Math.max(0, state.hubIndex - 1);
+        updateHubFocus();
+      } else if (key === KEYS.RIGHT) {
+        state.hubIndex = Math.min(3, state.hubIndex + 1);
+        updateHubFocus();
+      } else if (key === KEYS.ENTER) {
+        selectHubMode(modes[state.hubIndex]);
+      }
       return;
     }
 
@@ -949,6 +1171,7 @@
 
   // Global exports for inline onclick attributes
   window.switchToView = switchToView;
+  window.selectHubMode = selectHubMode;
   window.changeCatalogPage = changeCatalogPage;
   window.watchSelectedFullscreen = watchSelectedFullscreen;
   window.stopPlayerAndReturn = stopPlayerAndReturn;
