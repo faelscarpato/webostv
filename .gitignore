@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 coverage/
+apps/manager/public/
 *.ipk
 *.log
 .env
