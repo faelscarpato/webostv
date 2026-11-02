@@ -1,10 +1,8 @@
 {
-  "version": 2,
-  "public": true,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/apps/manager/$1"
+      "source": "/(.*)",
+      "destination": "/apps/manager/$1"
     }
   ]
 }
