@@ -483,13 +483,15 @@
           <button class="chip" data-type="series" onclick="filterByType('series')">🍿 Séries</button>
         </div>
 
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
           <input type="text" id="search-input" placeholder="🔍 Buscar por nome..." style="flex: 2; min-width: 200px;" oninput="onSearchInput()">
           <select id="group-select" style="flex: 1; min-width: 150px;" onchange="onGroupSelect()">
             <option value="">Todas as Categorias</option>
           </select>
-          <button class="btn btn-outline" id="fav-toggle-btn" onclick="toggleFavFilter()">⭐ Apenas Favoritos</button>
-          <button class="btn btn-outline" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="clearCurrentCategory()">🗑️ Limpar Categoria</button>
+          <button class="btn btn-outline" id="fav-toggle-btn" onclick="toggleFavFilter()">⭐ Favoritos</button>
+          <button class="btn btn-outline" id="hidden-toggle-btn" onclick="toggleShowHiddenFilter()">👁️ Ver Ocultos</button>
+          <button class="btn btn-outline" id="hide-group-btn" style="display: none;" onclick="toggleCurrentGroupVisibility()">🚫 Ocultar Grupo</button>
+          <button class="btn btn-outline" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="clearCurrentCategory()">🗑️ Limpar</button>
         </div>
 
         <div id="channels-container" class="channel-list">
@@ -576,6 +578,18 @@
         <button class="btn btn-primary" onclick="importM3UUrlToSupabase()">🌐 Baixar e Enviar para o Supabase</button>
         <div id="url-status" style="margin-top: 1rem;"></div>
       </div>
+
+      <div class="card">
+        <div class="card-title">4. Importar Guia de Programação (EPG / XMLTV Opcional)</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+          Envie um arquivo XMLTV (.xml) para associar horários e sinopses de programas aos canais ao vivo na TV LG pelo código <code>tvg-id</code>.
+        </p>
+        <div class="form-group">
+          <input type="file" id="epg-file-input" accept=".xml,text/xml,application/xml" style="padding: 0.5rem;">
+        </div>
+        <button class="btn btn-primary" onclick="uploadEPGFileToSupabase()">📅 Importar Guia XMLTV para o Supabase</button>
+        <div id="epg-upload-status" style="margin-top: 1rem;"></div>
+      </div>
     </div>
 
     <!-- TAB: DEPLOY & SUPABASE -->
@@ -631,7 +645,83 @@
 
   <!-- Configuration & Scripts -->
   <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 900; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="card" style="max-width: 520px; width: 100%; margin: 0; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+      <div class="card-title" style="justify-content: space-between;">
+        <span>✏️ Editar Item</span>
+        <button class="icon-btn" onclick="closeEditModal()">✕</button>
+      </div>
+      <input type="hidden" id="edit-item-id">
+      <div class="form-group">
+        <label>Nome de Exibição:</label>
+        <input type="text" id="edit-item-name">
+      </div>
+      <div class="form-group">
+        <label>Categoria / Grupo (group-title):</label>
+        <input type="text" id="edit-item-group">
+      </div>
+      <div class="form-group">
+        <label>URL do Logo / Capa (tvg-logo):</label>
+        <input type="text" id="edit-item-logo" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Código EPG (tvg-id):</label>
+        <input type="text" id="edit-item-tvgid" placeholder="Ex: Globo.br">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+        <button class="btn btn-outline" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveEditedItem()">💾 Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stream Preview Modal -->
+  <div id="preview-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 950; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="card" style="max-width: 720px; width: 100%; margin: 0;">
+      <div class="card-title" style="justify-content: space-between;">
+        <span id="preview-modal-title">▶️ Testando Stream</span>
+        <button class="icon-btn" onclick="closePreviewModal()">✕ Fechar</button>
+      </div>
+      <div style="background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; position: relative;">
+        <video id="preview-video-el" controls playsinline style="width: 100%; height: 100%;"></video>
+      </div>
+      <div id="preview-modal-status" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.75rem;"></div>
+    </div>
+  </div>
+
   <script>
+    // Escape HTML helper to prevent XSS and broken attributes on quotes
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Deterministic Channel ID Generator (preserves IDs across re-uploads)
+    function generateDeterministicChannelId(contentType, originalName, streamUrl, index) {
+      const cleanName = (originalName || '').trim().toLowerCase();
+      const cleanUrl = (streamUrl || '').trim();
+      const raw = `${contentType}:${cleanName}:${cleanUrl}`;
+      let h1 = 0xdeadbeef ^ raw.length;
+      let h2 = 0x41c6ce57 ^ raw.length;
+      for (let i = 0, ch; i < raw.length; i++) {
+        ch = raw.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      const hashHex = (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+      return `ch_${contentType}_${hashHex}_${index}`;
+    }
+
     // State
     const cfg = window.IPTV_CONFIG || {};
     let supabaseUrl = localStorage.getItem('iptv_supabase_url') || cfg.supabaseUrl || 'https://qzwunvyrozubfgwlkenh.supabase.co';
@@ -641,6 +731,7 @@
     let currentFilterType = ''; // '' | 'live' | 'movies' | 'series'
     let currentFilterGroup = '';
     let currentFilterFav = false;
+    let currentShowHidden = false;
     let currentSearch = '';
     let currentPage = 1;
     let pageSize = 40;
@@ -648,6 +739,7 @@
     let totalPages = 1;
     let currentChannels = [];
     let searchDebounce = null;
+    let previewHls = null;
 
     // Initialize UI
     document.addEventListener('DOMContentLoaded', () => {
@@ -718,9 +810,25 @@
       fetchChannelsPage();
     }
 
-    // Load statistics counts
+    // Load statistics counts (via high-performance RPC get_iptv_counts with REST fallback)
     async function loadCounts() {
       try {
+        const rpcRes = await fetchSupabase('rpc/get_iptv_counts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+
+        if (rpcRes.ok) {
+          const stats = await rpcRes.json();
+          document.getElementById('stat-total-channels').textContent = (stats.total || 0).toLocaleString('pt-BR');
+          document.getElementById('stat-live-channels').textContent = (stats.live || 0).toLocaleString('pt-BR');
+          document.getElementById('stat-movies-channels').textContent = (stats.movies || 0).toLocaleString('pt-BR');
+          document.getElementById('stat-series-channels').textContent = (stats.series || 0).toLocaleString('pt-BR');
+          document.getElementById('stat-fav-channels').textContent = (stats.favorites || 0).toLocaleString('pt-BR');
+          return;
+        }
+
         const getCount = async (filter) => {
           let ep = `iptv_channels?is_hidden=eq.false&select=count`;
           if (filter === 'fav') ep += `&is_favorite=eq.true`;
@@ -747,9 +855,32 @@
       }
     }
 
-    // Load Distinct Groups
+    // Load Distinct Groups (via RPC get_iptv_groups to bypass 1000-row PostgREST truncation)
     async function loadGroups() {
+      const select = document.getElementById('group-select');
       try {
+        const rpcRes = await fetchSupabase('rpc/get_iptv_groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            p_content_type: currentFilterType || null,
+            p_only_favorites: currentFilterFav || false
+          })
+        });
+
+        if (rpcRes.ok) {
+          const groups = await rpcRes.json();
+          select.innerHTML = '<option value="">Todas as Categorias</option>';
+          groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.name;
+            opt.textContent = `${g.name} (${Number(g.count).toLocaleString('pt-BR')})`;
+            select.appendChild(opt);
+          });
+          if (currentFilterGroup) select.value = currentFilterGroup;
+          return;
+        }
+
         let ep = `iptv_channels?is_hidden=eq.false&select=group_title`;
         if (currentFilterType) ep += `&content_type=eq.${currentFilterType}`;
         const res = await fetchSupabase(ep);
@@ -760,7 +891,6 @@
             const g = (r.group_title || 'Geral').trim();
             map[g] = (map[g] || 0) + 1;
           });
-          const select = document.getElementById('group-select');
           select.innerHTML = '<option value="">Todas as Categorias</option>';
           Object.entries(map).sort((a,b) => b[1] - a[1]).forEach(([name, count]) => {
             const opt = document.createElement('option');
@@ -780,6 +910,7 @@
       const offset = (currentPage - 1) * pageSize;
 
       let query = `iptv_channels?order=sort_order.asc,name.asc&offset=${offset}&limit=${pageSize}`;
+      if (!currentShowHidden) query += `&is_hidden=eq.false`;
       if (currentFilterType) query += `&content_type=eq.${currentFilterType}`;
       if (currentFilterGroup) query += `&group_title=eq.${encodeURIComponent(currentFilterGroup)}`;
       if (currentFilterFav) query += `&is_favorite=eq.true`;
@@ -797,7 +928,7 @@
         renderChannels();
         updatePaginationUI();
       } catch (err) {
-        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--danger);">Falha ao carregar conteúdos: ${err.message}</div>`;
+        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--danger);">Falha ao carregar conteúdos: ${escapeHtml(err.message)}</div>`;
       }
     }
 
@@ -808,26 +939,38 @@
         return;
       }
 
-      container.innerHTML = currentChannels.map(c => `
-        <div class="channel-item ${c.is_hidden ? 'hidden-chan' : ''}">
+      container.innerHTML = currentChannels.map(c => {
+        const safeId = escapeHtml(c.id);
+        const safeName = escapeHtml(c.name);
+        const safeGroup = escapeHtml(c.group_title || 'Geral');
+        const safeLogo = c.logo_url ? escapeHtml(c.logo_url) : '';
+        const typeLabel = c.content_type === 'live' ? 'TV' : (c.content_type === 'movies' ? 'Filme' : 'Série');
+        const seriesBadge = c.series_name && c.season_number
+          ? `<span style="margin-left: 0.35rem; color: var(--amber);">• T${String(c.season_number).padStart(2,'0')}E${String(c.episode_number || 1).padStart(2,'0')}</span>`
+          : '';
+
+        return `
+        <div class="channel-item ${c.is_hidden ? 'hidden-chan' : ''}" id="row-${safeId}">
           <div class="channel-info">
-            ${c.logo_url ? `<img src="${c.logo_url}" loading="lazy" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
+            ${safeLogo ? `<img src="${safeLogo}" loading="lazy" class="channel-logo" onerror="this.outerHTML='<div class=\\'channel-logo\\'>TV</div>'">` : `<div class="channel-logo">TV</div>`}
             <div>
-              <div class="channel-name" title="${c.name}">${c.name}</div>
+              <div class="channel-name" title="${safeName}">${safeName}</div>
               <div class="channel-group-tag">
-                <span class="type-pill type-${c.content_type}">${c.content_type === 'live' ? 'TV' : (c.content_type === 'movies' ? 'Filme' : 'Série')}</span>
-                <span>• ${c.group_title || 'Geral'}</span>
+                <span class="type-pill type-${escapeHtml(c.content_type)}">${typeLabel}</span>
+                <span>• ${safeGroup}</span>
+                ${seriesBadge}
               </div>
             </div>
           </div>
           <div class="channel-actions">
-            <button class="icon-btn ${c.is_favorite ? 'active-fav' : ''}" title="Favorito" onclick="toggleItemFavorite('${c.id}', ${!c.is_favorite})">⭐</button>
-            <button class="icon-btn" title="Renomear" onclick="renameItem('${c.id}', '${c.name.replace(/'/g, "\\'")}')">✏️</button>
-            <button class="icon-btn" title="${c.is_hidden ? 'Exibir' : 'Ocultar'}" onclick="toggleItemHidden('${c.id}', ${!c.is_hidden})">${c.is_hidden ? '👁️' : '🚫'}</button>
-            <button class="icon-btn" title="Excluir" style="color: var(--danger);" onclick="deleteItem('${c.id}')">🗑️</button>
+            <button class="icon-btn" title="Testar Stream no Navegador" onclick="openPreviewModal('${safeId}')">▶️</button>
+            <button class="icon-btn ${c.is_favorite ? 'active-fav' : ''}" id="fav-btn-${safeId}" title="Favorito" onclick="toggleItemFavorite('${safeId}', ${!c.is_favorite})">⭐</button>
+            <button class="icon-btn" title="Editar Nome / Categoria / EPG" onclick="openEditModal('${safeId}')">✏️</button>
+            <button class="icon-btn" title="${c.is_hidden ? 'Exibir na TV' : 'Ocultar da TV'}" onclick="toggleItemHidden('${safeId}', ${!c.is_hidden})">${c.is_hidden ? '👁️' : '🚫'}</button>
+            <button class="icon-btn" title="Excluir" style="color: var(--danger);" onclick="deleteItem('${safeId}')">🗑️</button>
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     function updatePaginationUI() {
@@ -862,6 +1005,10 @@
 
     function onGroupSelect() {
       currentFilterGroup = document.getElementById('group-select').value;
+      const hideGrpBtn = document.getElementById('hide-group-btn');
+      if (hideGrpBtn) {
+        hideGrpBtn.style.display = currentFilterGroup ? 'inline-flex' : 'none';
+      }
       currentPage = 1;
       fetchChannelsPage();
     }
@@ -872,38 +1019,160 @@
       btn.classList.toggle('btn-primary', currentFilterFav);
       btn.classList.toggle('btn-outline', !currentFilterFav);
       currentPage = 1;
+      loadGroups();
       fetchChannelsPage();
     }
 
-    // Item Action Modifiers
+    function toggleShowHiddenFilter() {
+      currentShowHidden = !currentShowHidden;
+      const btn = document.getElementById('hidden-toggle-btn');
+      btn.classList.toggle('btn-primary', currentShowHidden);
+      btn.classList.toggle('btn-outline', !currentShowHidden);
+      currentPage = 1;
+      fetchChannelsPage();
+    }
+
+    async function toggleCurrentGroupVisibility() {
+      if (!currentFilterGroup) return;
+      if (!confirm(`Deseja ocultar da TV todos os itens do grupo "${currentFilterGroup}"?`)) return;
+      let ep = `iptv_channels?group_title=eq.${encodeURIComponent(currentFilterGroup)}`;
+      if (currentFilterType) ep += `&content_type=eq.${currentFilterType}`;
+      await fetchSupabase(ep, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_hidden: true })
+      });
+      loadCounts();
+      loadGroups();
+      fetchChannelsPage();
+    }
+
+    // Item Action Modifiers (with Optimistic UI)
     async function toggleItemFavorite(id, isFav) {
+      const target = currentChannels.find(c => c.id === id);
+      if (target) target.is_favorite = isFav;
+      const btn = document.getElementById(`fav-btn-${id}`);
+      if (btn) btn.classList.toggle('active-fav', isFav);
+
       await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_favorite: isFav })
       });
       loadCounts();
-      fetchChannelsPage();
+      if (currentFilterFav && !isFav) fetchChannelsPage();
     }
 
     async function toggleItemHidden(id, isHidden) {
+      const target = currentChannels.find(c => c.id === id);
+      if (target) target.is_hidden = isHidden;
+      const row = document.getElementById(`row-${id}`);
+      if (row) row.classList.toggle('hidden-chan', isHidden);
+
       await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_hidden: isHidden })
       });
+      loadCounts();
+      loadGroups();
       fetchChannelsPage();
     }
 
-    async function renameItem(id, currentName) {
-      const newName = prompt('Novo nome para o conteúdo:', currentName);
-      if (!newName || newName.trim() === currentName) return;
+    function openEditModal(id) {
+      const item = currentChannels.find(c => c.id === id);
+      if (!item) return;
+      document.getElementById('edit-item-id').value = item.id;
+      document.getElementById('edit-item-name').value = item.name || '';
+      document.getElementById('edit-item-group').value = item.group_title || 'Geral';
+      document.getElementById('edit-item-logo').value = item.logo_url || '';
+      document.getElementById('edit-item-tvgid').value = item.tvg_id || '';
+      document.getElementById('edit-modal-backdrop').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal-backdrop').style.display = 'none';
+    }
+
+    async function saveEditedItem() {
+      const id = document.getElementById('edit-item-id').value;
+      const name = document.getElementById('edit-item-name').value.trim();
+      const group_title = document.getElementById('edit-item-group').value.trim() || 'Geral';
+      const logo_url = document.getElementById('edit-item-logo').value.trim() || null;
+      const tvg_id = document.getElementById('edit-item-tvgid').value.trim() || null;
+      if (!id || !name) return alert('O nome não pode ficar vazio.');
+
       await fetchSupabase(`iptv_channels?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim() })
+        body: JSON.stringify({ name, group_title, logo_url, tvg_id })
       });
+      closeEditModal();
+      loadGroups();
       fetchChannelsPage();
+    }
+
+    function openPreviewModal(id) {
+      const item = currentChannels.find(c => c.id === id);
+      if (!item) return;
+      const modal = document.getElementById('preview-modal-backdrop');
+      const video = document.getElementById('preview-video-el');
+      const status = document.getElementById('preview-modal-status');
+      document.getElementById('preview-modal-title').textContent = `▶️ ${item.name}`;
+      status.textContent = 'Conectando ao stream...';
+      modal.style.display = 'flex';
+
+      if (previewHls) {
+        previewHls.destroy();
+        previewHls = null;
+      }
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+
+      const url = (item.stream_url || '').trim();
+      const isVodFile = /\.(mp4|mkv|avi|mov|webm)(\?.*)?$/i.test(url);
+
+      if (window.Hls && Hls.isSupported() && !isVodFile) {
+        previewHls = new Hls({ maxBufferLength: 15, maxMaxBufferLength: 30 });
+        const playUrl = url.toLowerCase().endsWith('.ts') ? url.replace(/\.ts$/i, '.m3u8') : url;
+        previewHls.loadSource(playUrl);
+        previewHls.attachMedia(video);
+        previewHls.on(Hls.Events.MANIFEST_PARSED, () => {
+          status.textContent = 'Stream HLS ativo.';
+          video.play().catch(() => {});
+        });
+        previewHls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            previewHls.destroy();
+            previewHls = null;
+            video.src = url;
+            video.play().catch(() => {
+              status.textContent = '⚠️ Não foi possível reproduzir no navegador (possível bloqueio CORS ou HTTP Mixed Content). Teste diretamente na TV LG!';
+            });
+          }
+        });
+      } else {
+        video.src = url;
+        video.play().then(() => {
+          status.textContent = 'Reprodução direta iniciada.';
+        }).catch(() => {
+          status.textContent = '⚠️ O navegador bloqueou o stream (HTTP Mixed Content ou formato exclusivo da TV).';
+        });
+      }
+    }
+
+    function closePreviewModal() {
+      const modal = document.getElementById('preview-modal-backdrop');
+      const video = document.getElementById('preview-video-el');
+      if (previewHls) {
+        previewHls.destroy();
+        previewHls = null;
+      }
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      modal.style.display = 'none';
     }
 
     async function deleteItem(id) {
@@ -912,6 +1181,7 @@
         method: 'DELETE'
       });
       loadCounts();
+      loadGroups();
       fetchChannelsPage();
     }
 
@@ -940,8 +1210,46 @@
       });
     }
 
+    // Extracts channel title after the first comma outside quotes in #EXTINF
+    function extractExtInfName(line) {
+      const content = line.substring(8);
+      let inQuotes = false;
+      let quoteChar = '';
+      for (let i = 0; i < content.length; i++) {
+        const ch = content[i];
+        if ((ch === '"' || ch === "'") && content[i - 1] !== '\\') {
+          if (!inQuotes) {
+            inQuotes = true;
+            quoteChar = ch;
+          } else if (ch === quoteChar) {
+            inQuotes = false;
+          }
+        } else if (ch === ',' && !inQuotes) {
+          return content.substring(i + 1).trim() || 'Canal Sem Nome';
+        }
+      }
+      const lastComma = line.lastIndexOf(',');
+      return lastComma !== -1 ? line.substring(lastComma + 1).trim() : 'Canal Sem Nome';
+    }
+
+    // Extracts series hierarchy (Series Name, Season, Episode) from title
+    function extractSeriesMetadata(title) {
+      // Matches patterns like "Nome da Serie S01E02", "Nome S01 E02", "Nome 1x02", "Nome T01E02"
+      const match = title.match(/^(.*?)\s*(?:[ST](\d{1,2})\s*[-._ ]?[EP](\d{1,3})|(\d{1,2})x(\d{1,3}))\b/i);
+      if (!match) return null;
+      const baseName = match[1].replace(/[-–—:|_]+$/, '').trim();
+      const season = parseInt(match[2] || match[4], 10);
+      const episode = parseInt(match[3] || match[5], 10);
+      if (!baseName || isNaN(season) || isNaN(episode)) return null;
+      return { seriesName: baseName, seasonNumber: season, episodeNumber: episode };
+    }
+
     function parseM3ULineByLine(content, contentType) {
-      const lines = content.split(/\r?\n/);
+      let cleanContent = content || '';
+      if (cleanContent.charCodeAt(0) === 0xfeff) {
+        cleanContent = cleanContent.slice(1);
+      }
+      const lines = cleanContent.split(/\r?\n/);
       const items = [];
       let pending = null;
 
@@ -950,21 +1258,24 @@
         if (!line) continue;
 
         if (line.startsWith('#EXTINF:')) {
-          const tvgId = (line.match(/tvg-id="([^"]*)"/i) || [])[1] || '';
-          const tvgName = (line.match(/tvg-name="([^"]*)"/i) || [])[1] || '';
-          const logoUrl = (line.match(/tvg-logo="([^"]*)"/i) || [])[1] || '';
-          const groupTitle = (line.match(/group-title="([^"]*)"/i) || [])[1] || 'Geral';
-          const commaIdx = line.lastIndexOf(',');
-          const name = commaIdx !== -1 ? line.substring(commaIdx + 1).trim() : 'Canal Sem Nome';
+          const tvgId = (line.match(/tvg-id=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i) || []).slice(1).find(Boolean) || '';
+          const tvgName = (line.match(/tvg-name=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i) || []).slice(1).find(Boolean) || '';
+          const logoUrl = (line.match(/tvg-logo=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i) || []).slice(1).find(Boolean) || '';
+          const groupTitle = (line.match(/group-title=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/i) || []).slice(1).find(Boolean) || 'Geral';
+          const name = extractExtInfName(line);
+          const seriesMeta = contentType === 'series' ? extractSeriesMetadata(name) : null;
 
           pending = {
             content_type: contentType,
             name: name || 'Canal Sem Nome',
-            original_name: name,
+            original_name: name || 'Canal Sem Nome',
             group_title: groupTitle || 'Geral',
             logo_url: logoUrl || null,
             tvg_id: tvgId || null,
             tvg_name: tvgName || null,
+            series_name: seriesMeta ? seriesMeta.seriesName : null,
+            season_number: seriesMeta ? seriesMeta.seasonNumber : null,
+            episode_number: seriesMeta ? seriesMeta.episodeNumber : null,
             sort_order: items.length + 1,
             is_favorite: false,
             is_hidden: false,
@@ -974,12 +1285,95 @@
         } else if (pending) {
           // Stream URL line
           pending.stream_url = line;
-          pending.id = 'ch_' + Math.random().toString(36).substring(2, 11) + '_' + items.length;
+          pending.id = generateDeterministicChannelId(contentType, pending.original_name, line, items.length);
           items.push(pending);
           pending = null;
         }
       }
       return items;
+    }
+
+    // Preserves favorites, hidden flags and custom names before replacing a category
+    async function saveAndUploadItemsToSupabase(items, contentType, replaceMode, progressCallbacks = {}) {
+      const { onStatus, onProgress } = progressCallbacks;
+      const preservedState = new Map();
+
+      if (replaceMode) {
+        if (onStatus) onStatus(`Preservando favoritos e personalizações de ${contentType}...`);
+        try {
+          const customRes = await fetchSupabase(
+            `iptv_channels?content_type=eq.${contentType}&or=(is_favorite.eq.true,is_hidden.eq.true)&select=original_name,stream_url,name,is_favorite,is_hidden`
+          );
+          if (customRes.ok) {
+            const savedRows = await customRes.json();
+            savedRows.forEach(r => {
+              const key = `${(r.original_name || '').trim().toLowerCase()}|${(r.stream_url || '').trim()}`;
+              preservedState.set(key, r);
+              preservedState.set((r.original_name || '').trim().toLowerCase(), r);
+            });
+          }
+        } catch (e) {
+          console.warn('Aviso ao preservar estado anterior:', e);
+        }
+
+        // Reaplicar favoritos e ocultos nos novos itens
+        if (preservedState.size > 0) {
+          items.forEach(item => {
+            const exactKey = `${item.original_name.trim().toLowerCase()}|${item.stream_url.trim()}`;
+            const prev = preservedState.get(exactKey) || preservedState.get(item.original_name.trim().toLowerCase());
+            if (prev) {
+              item.is_favorite = Boolean(prev.is_favorite);
+              item.is_hidden = Boolean(prev.is_hidden);
+              if (prev.name && prev.name !== prev.original_name) {
+                item.name = prev.name;
+              }
+            }
+          });
+        }
+
+        if (onStatus) onStatus(`Limpando conteúdos anteriores de ${contentType}...`);
+        await fetchSupabase(`iptv_channels?content_type=eq.${contentType}`, { method: 'DELETE' });
+      }
+
+      const BATCH_SIZE = 250;
+      const totalBatches = Math.ceil(items.length / BATCH_SIZE);
+
+      for (let b = 0; b < totalBatches; b++) {
+        const batch = items.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        const pct = Math.round(((b + 1) / totalBatches) * 100);
+
+        if (onStatus) onStatus(`Enviando bloco ${b + 1} de ${totalBatches} (${batch.length} itens)...`);
+        if (onProgress) onProgress(pct);
+
+        const res = await fetchSupabase('iptv_channels', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify(batch)
+        });
+
+        if (!res.ok) {
+          const errTxt = await res.text();
+          throw new Error(`Falha no lote ${b + 1}: ${errTxt}`);
+        }
+      }
+
+      // Registra histórico na tabela iptv_playlists
+      try {
+        await fetchSupabase('iptv_playlists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `Importação ${contentType.toUpperCase()} (${new Date().toLocaleDateString('pt-BR')})`,
+            content_type: contentType,
+            channel_count: items.length
+          })
+        });
+      } catch (e) {
+        console.warn('Aviso ao registrar playlist:', e);
+      }
     }
 
     async function uploadM3UFileToSupabase() {
@@ -1011,46 +1405,21 @@
             throw new Error('Nenhum canal ou stream válido encontrado no arquivo.');
           }
 
-          // Se for modo substituir, apagar os antigos dessa categoria
-          if (replaceMode) {
-            progressLabel.textContent = `Limpando conteúdos anteriores de ${currentSelectedType}...`;
-            await fetchSupabase(`iptv_channels?content_type=eq.${currentSelectedType}`, { method: 'DELETE' });
-          }
-
-          // Enviar em lotes de 200 itens
-          const BATCH_SIZE = 200;
-          const totalBatches = Math.ceil(items.length / BATCH_SIZE);
-
-          for (let b = 0; b < totalBatches; b++) {
-            const batch = items.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
-            const pct = Math.round(((b + 1) / totalBatches) * 100);
-
-            progressLabel.textContent = `Enviando bloco ${b + 1} de ${totalBatches} (${batch.length} itens)...`;
-            progressFill.style.width = `${pct}%`;
-            progressPct.textContent = `${pct}%`;
-
-            const res = await fetchSupabase('iptv_channels', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Prefer': 'resolution=merge-duplicates'
-              },
-              body: JSON.stringify(batch)
-            });
-
-            if (!res.ok) {
-              const errTxt = await res.text();
-              throw new Error(`Falha no lote ${b + 1}: ${errTxt}`);
+          await saveAndUploadItemsToSupabase(items, currentSelectedType, replaceMode, {
+            onStatus: (msg) => { progressLabel.textContent = msg; },
+            onProgress: (pct) => {
+              progressFill.style.width = `${pct}%`;
+              progressPct.textContent = `${pct}%`;
             }
-          }
+          });
 
-          statusDiv.innerHTML = `<div class="alert alert-success">🎉 Sucesso! <strong>${items.length.toLocaleString('pt-BR')} itens</strong> foram importados como <strong>${currentSelectedType.toUpperCase()}</strong> no Supabase!</div>`;
+          statusDiv.innerHTML = `<div class="alert alert-success">🎉 Sucesso! <strong>${items.length.toLocaleString('pt-BR')} itens</strong> foram importados como <strong>${currentSelectedType.toUpperCase()}</strong> no Supabase (favoritos preservados)!</div>`;
           progressLabel.textContent = 'Importação concluída!';
           loadCounts();
           loadGroups();
           fetchChannelsPage();
         } catch (err) {
-          statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro na importação: ${err.message}</div>`;
+          statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro na importação: ${escapeHtml(err.message)}</div>`;
         }
       };
       reader.readAsText(file);
@@ -1059,6 +1428,7 @@
     async function importM3UUrlToSupabase() {
       const url = document.getElementById('m3u-url-input').value.trim();
       const statusDiv = document.getElementById('url-status');
+      const replaceMode = document.querySelector('input[name="import-mode"]:checked').value === 'replace';
       if (!url) return alert('Digite a URL da playlist!');
 
       statusDiv.innerHTML = `<div class="alert alert-info">⏳ Baixando playlist da URL remota...</div>`;
@@ -1067,23 +1437,106 @@
         if (!res.ok) throw new Error(`Falha ao baixar URL: HTTP ${res.status}`);
         const text = await res.text();
         const items = parseM3ULineByLine(text, currentSelectedType);
+        if (items.length === 0) throw new Error('Nenhum item válido encontrado na lista remota.');
 
-        statusDiv.innerHTML = `<div class="alert alert-info">Enviando ${items.length} itens para o Supabase...</div>`;
-        const BATCH_SIZE = 200;
-        for (let b = 0; b < Math.ceil(items.length / BATCH_SIZE); b++) {
-          const batch = items.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
-          await fetchSupabase('iptv_channels', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-            body: JSON.stringify(batch)
-          });
-        }
-        statusDiv.innerHTML = `<div class="alert alert-success">🎉 ${items.length} itens importados com sucesso!</div>`;
+        await saveAndUploadItemsToSupabase(items, currentSelectedType, replaceMode, {
+          onStatus: (msg) => {
+            statusDiv.innerHTML = `<div class="alert alert-info">⏳ ${escapeHtml(msg)}</div>`;
+          }
+        });
+
+        statusDiv.innerHTML = `<div class="alert alert-success">🎉 ${items.length.toLocaleString('pt-BR')} itens importados com sucesso!</div>`;
         loadCounts();
+        loadGroups();
         fetchChannelsPage();
       } catch (e) {
-        statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro: ${e.message}</div>`;
+        statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro ao baixar URL (possível bloqueio CORS/HTTP do provedor): ${escapeHtml(e.message)}. Dica: Baixe o arquivo .m3u no navegador e use a opção 2 (Importar Arquivo) acima!</div>`;
       }
+    }
+
+    // Parse XMLTV date (YYYYMMDDhhmmss +ZZZZ) to ISO 8601
+    function parseXmltvDateISO(dateStr) {
+      const m = (dateStr || '').trim().match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?:\s*([+-]\d{2})(\d{2}))?/);
+      if (!m) return null;
+      const tz = (m[7] && m[8]) ? `${m[7]}:${m[8]}` : 'Z';
+      return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}${tz}`;
+    }
+
+    async function uploadEPGFileToSupabase() {
+      const fileInput = document.getElementById('epg-file-input');
+      const statusDiv = document.getElementById('epg-upload-status');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        return alert('Selecione um arquivo XMLTV (.xml) primeiro!');
+      }
+
+      const file = fileInput.files[0];
+      statusDiv.innerHTML = `<div class="alert alert-info">⏳ Lendo arquivo XMLTV (${(file.size / (1024*1024)).toFixed(1)} MB)...</div>`;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const xml = e.target.result;
+          const progRegex = /<programme\s+([^>]+)>([\s\S]*?)<\/programme>/gi;
+          const programmes = [];
+          const nowMinus2h = Date.now() - 2 * 3600 * 1000;
+          const nowPlus36h = Date.now() + 36 * 3600 * 1000;
+          let match;
+
+          while ((match = progRegex.exec(xml)) !== null) {
+            const attrs = match[1];
+            const body = match[2];
+            const chMatch = attrs.match(/channel=["']([^"']+)["']/i);
+            const startMatch = attrs.match(/start=["']([^"']+)["']/i);
+            const stopMatch = attrs.match(/stop=["']([^"']+)["']/i);
+            if (!chMatch || !startMatch || !stopMatch) continue;
+
+            const startISO = parseXmltvDateISO(startMatch[1]);
+            const stopISO = parseXmltvDateISO(stopMatch[1]);
+            if (!startISO || !stopISO) continue;
+
+            const stopMs = Date.parse(stopISO);
+            const startMs = Date.parse(startISO);
+            // Filtra apenas programação relevante (-2h até +36h) para envio ultra-rápido
+            if (stopMs < nowMinus2h || startMs > nowPlus36h) continue;
+
+            const titleMatch = body.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            const descMatch = body.match(/<desc[^>]*>([\s\S]*?)<\/desc>/i);
+            const title = titleMatch ? titleMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim() : 'Programação Ao Vivo';
+            const description = descMatch ? descMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim() : null;
+
+            programmes.push({
+              channel_tvg_id: chMatch[1],
+              title,
+              description,
+              start_time: startISO,
+              stop_time: stopISO
+            });
+          }
+
+          if (programmes.length === 0) {
+            throw new Error('Nenhum programa dentro da janela atual (-2h a +36h) foi encontrado neste XMLTV.');
+          }
+
+          statusDiv.innerHTML = `<div class="alert alert-info">⏳ Limpando guia antigo e enviando ${programmes.length.toLocaleString('pt-BR')} programas atuais...</div>`;
+          await fetchSupabase('rpc/cleanup_expired_epg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+
+          const BATCH_SIZE = 300;
+          for (let b = 0; b < Math.ceil(programmes.length / BATCH_SIZE); b++) {
+            const batch = programmes.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+            const res = await fetchSupabase('iptv_epg_programmes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(batch)
+            });
+            if (!res.ok) throw new Error(`Erro ao salvar lote EPG ${b + 1}`);
+          }
+
+          statusDiv.innerHTML = `<div class="alert alert-success">✅ Sucesso! <strong>${programmes.length.toLocaleString('pt-BR')} horários de programação</strong> enviados para o Supabase!</div>`;
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="alert alert-danger">❌ Erro ao importar XMLTV: ${escapeHtml(err.message)}</div>`;
+        }
+      };
+      reader.readAsText(file);
     }
 
     // Navigation Switcher
@@ -1101,15 +1554,19 @@
       if (tabName === 'pairing') btns[3].classList.add('active');
     }
 
-    // PIN Pairing (for Local Server compatibility)
+    // PIN Pairing (for Local Server compatibility - fixed endpoint /api/devices/pair/request)
     async function generatePIN() {
+      const localHost = window.location.hostname && window.location.hostname !== 'localhost' && !window.location.hostname.includes('vercel.app')
+        ? `http://${window.location.hostname}:3001`
+        : 'http://192.168.18.7:3001';
       try {
-        const res = await fetch('http://192.168.18.7:3001/api/pairing/pin', { method: 'POST' });
+        const res = await fetch(`${localHost}/api/devices/pair/request`, { method: 'POST' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         document.getElementById('pin-container').style.display = 'block';
         document.getElementById('pin-value').textContent = data.pin;
       } catch {
-        alert('Servidor local não encontrado para gerar PIN. Você pode usar a conexão direta com o Supabase na TV!');
+        alert('Servidor local não encontrado na rede. Lembre-se: a sua TV LG já sincroniza diretamente com o Supabase na nuvem sem precisar de PIN!');
       }
     }
   </script>

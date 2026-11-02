@@ -110,6 +110,8 @@ export function sanitizeLog(text: string): string {
   return text
     // Redact password in user:pass@host
     .replace(/(https?:\/\/)([^:\s\/]+):([^@\s\/]+)@/gi, '$1$2:***REDACTED***@')
+    // Redact Xtream Codes path credentials (/live/user/pass/123 or /movie/user/pass/123 or /series/user/pass/123)
+    .replace(/(\/(?:live|movie|series)\/[^\/\s]+\/)([^\/\s]+)(\/)/gi, '$1***REDACTED***$3')
     // Redact sensitive query parameters
     .replace(/([?&](?:password|token|secret|key|auth|pass)=)([^&\s]+)/gi, '$1***REDACTED***')
     // Redact bearer tokens

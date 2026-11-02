@@ -180,22 +180,58 @@ export function createLocalServer(config: ServerConfig) {
           return sendError(400, `Falha ao resolver DNS do domínio '${parsedTarget.hostname}': ${dnsErr.message}`);
         }
 
-        // 3. Fetch remote file with timeout & limit
+        // 3. Fetch remote file with timeout, limit & safe manual redirect validation (anti-SSRF on 3xx)
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+          let currentFetchUrl = targetUrl;
+          let response: Response | null = null;
+          const MAX_REDIRECTS = 3;
 
-          const response = await fetch(targetUrl, {
-            signal: controller.signal,
-            headers: {
-              'User-Agent': 'IPTV-Local-Player/1.0',
-            },
-            redirect: 'follow',
-          });
-          clearTimeout(timeoutId);
+          for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+            const pre = validateUrlPreflight(currentFetchUrl);
+            if (!pre.isSafe) {
+              return sendError(400, `Bloqueio de Segurança SSRF no redirecionamento: ${pre.reason}`);
+            }
 
-          if (!response.ok) {
-            return sendError(502, `Servidor remoto respondeu com status ${response.status}: ${response.statusText}`);
+            const parsedHop = new URL(currentFetchUrl);
+            try {
+              const hopAddresses = await dns.lookup(parsedHop.hostname, { all: true });
+              for (const addr of hopAddresses) {
+                if (isRestrictedIP(addr.address)) {
+                  return sendError(403, `Bloqueio de Segurança SSRF: O endereço IP ${addr.address} do host '${parsedHop.hostname}' pertence a uma faixa restrita (loopback/privada).`);
+                }
+              }
+            } catch (dnsErr: any) {
+              return sendError(400, `Falha ao resolver DNS do domínio '${parsedHop.hostname}': ${dnsErr.message}`);
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+            response = await fetch(currentFetchUrl, {
+              signal: controller.signal,
+              headers: {
+                'User-Agent': 'IPTV-Local-Player/1.0',
+              },
+              redirect: 'manual',
+            });
+            clearTimeout(timeoutId);
+
+            if (response.status >= 300 && response.status < 400) {
+              const location = response.headers.get('location');
+              if (!location) {
+                return sendError(502, `Redirecionamento HTTP ${response.status} sem cabeçalho Location.`);
+              }
+              if (redirectCount === MAX_REDIRECTS) {
+                return sendError(502, `Limite máximo de redirecionamentos (${MAX_REDIRECTS}) excedido.`);
+              }
+              currentFetchUrl = new URL(location, currentFetchUrl).toString();
+              continue;
+            }
+            break;
+          }
+
+          if (!response || !response.ok) {
+            return sendError(502, `Servidor remoto respondeu com status ${response?.status}: ${response?.statusText}`);
           }
 
           const text = await response.text();

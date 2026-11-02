@@ -230,11 +230,18 @@
         <div id="category-rail" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           <!-- Rendered dynamically -->
         </div>
-        <!-- Quick Numeric Channel Box -->
-        <div class="flex items-center gap-2 shrink-0 bg-surface-container px-3 py-1.5 rounded-xl border border-outline-variant/40">
-          <span class="material-symbols-outlined text-primary text-[20px]">dialpad</span>
-          <span class="text-xs font-label-tech text-on-surface-variant">Canal:</span>
-          <span id="numeric-input-display" class="text-xs font-label-tech text-primary font-bold bg-surface-container-lowest px-2 py-0.5 rounded border border-outline-variant/50">_ _ _</span>
+        <!-- Search & Quick Numeric Channel Box -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-xl border border-outline-variant/40">
+            <span class="material-symbols-outlined text-primary text-[18px]">search</span>
+            <input id="catalog-search-input" type="text" placeholder="Buscar título..." class="bg-transparent border-none text-xs font-body-md text-white placeholder-on-surface-variant/60 focus:outline-none focus:ring-0 w-36 p-0 focusable" oninput="onCatalogSearchInput(this.value)"/>
+            <button id="catalog-search-clear" class="text-on-surface-variant hover:text-white text-xs hidden" onclick="clearCatalogSearch()">✕</button>
+          </div>
+          <div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-xl border border-outline-variant/40">
+            <span class="material-symbols-outlined text-primary text-[20px]">dialpad</span>
+            <span class="text-xs font-label-tech text-on-surface-variant">Canal:</span>
+            <span id="numeric-input-display" class="text-xs font-label-tech text-primary font-bold bg-surface-container-lowest px-2 py-0.5 rounded border border-outline-variant/50">_ _ _</span>
+          </div>
         </div>
       </div>
     </section>
@@ -375,6 +382,18 @@
           <div class="text-right">
             <h3 id="player-hud-epg-title" class="text-lg font-headline-sm font-semibold text-[#ffcc00]">Transmissão ao Vivo</h3>
             <span id="player-hud-epg-time" class="text-xs font-label-tech text-on-surface-variant">Ao Vivo</span>
+          </div>
+        </div>
+
+        <!-- VOD Progress & Scrubber Bar (Shown for Movies & Series) -->
+        <div id="player-vod-progress-box" class="mb-3 hidden">
+          <div class="flex items-center justify-between text-xs font-label-tech text-on-surface-variant mb-1.5">
+            <span id="player-vod-current-time">00:00:00</span>
+            <span class="text-primary">Use ◄ (-15s) e ► (+30s) no controle para avançar/voltar</span>
+            <span id="player-vod-duration">00:00:00</span>
+          </div>
+          <div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-outline-variant/40 cursor-pointer" onclick="onVodScrubberClick(event)">
+            <div id="player-vod-progress-fill" class="h-full bg-gradient-to-r from-primary-container to-tertiary transition-all duration-200" style="width: 0%;"></div>
           </div>
         </div>
 
