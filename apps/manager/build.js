@@ -21,8 +21,8 @@ for (const f of files) {
 
 const destConfig = path.join(outDir, 'config.js');
 if (!fs.existsSync(destConfig)) {
-  const envUrl = process.env.SUPABASE_URL || 'https://qzwunvyrozubfgwlkenh.supabase.co';
-  const envKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6d3Vudnlyb3p1YmZnd2xrZW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NTkzNDIsImV4cCI6MjEwOTEzNTM0Mn0.7j1ZYb3G88OVgh8Bvir2ih47BE7mrcdLSbfUBw6OqR4';
+  const envUrl = process.env.SUPABASE_URL || '';
+  const envKey = process.env.SUPABASE_ANON_KEY || '';
   fs.writeFileSync(
     destConfig,
     `window.IPTV_CONFIG = {\n  supabaseUrl: ${JSON.stringify(envUrl)},\n  supabaseAnonKey: ${JSON.stringify(envKey)}\n};\n`,
